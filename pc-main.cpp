@@ -91,12 +91,12 @@ void process_arg(char* arg)
         strcpy_s(input_fn, sizeof(input_fn), arg);
     }
     else if (*arg == '?') {
-        printString("usage s5 [arguments] [code]\n");
+        printString("usage Q4 [arguments] [code]\n");
         printString("  -s:[source-filename]\n");
         printString("  -i  Run in interactive mode (default)\n");
         printString("  -n  Run in non-interactive mode\n");
     }
-    else { printf("unknown arg '-%s' (try s5 -?)\n", arg); }
+    else { printf("unknown arg '-%s' (try Q4 -?)\n", arg); }
 }
 
 sys_t *createSystem() {

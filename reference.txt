@@ -1,5 +1,5 @@
 ************************************
-*     s5 Reference                 *
+*     Q4 Reference                 *
 ************************************
 
 *** ARITHMETIC ***
@@ -129,5 +129,5 @@ XPRA   (p--n)       Arduino: pin read analog  (n = analogRead(p))
 XPRD   (p--n)       Arduino: pin read digital (n = digitalRead(p))
 XPWA   (n p--)      Arduino: pin write analog  (analogWrite(p, n))
 XPWD   (n p--)      Arduino: pin write digital (digitalWrite(p, n))
-XT     (--)         Exit S4
-XR     (--)         Reset S4 to initial state
+XT     (--)         Exit Q4
+XR     (--)         Reset Q4 to initial state

@@ -1,4 +1,4 @@
-S4 examples:
+Q4 examples:
 
 ; To enter a comment: 
     0( here is a comment )
@@ -16,7 +16,7 @@ S4 examples:
     NOTE: if there is a ')' in the function, the definition may fail
 
 ; To make sure F < T
-     S4 code:             %%>($)
+     Q4 code:             %%>($)
      Forth equivalent:    OVER OVER > IF SWAP THEN
      C equivalent:        if (f > t) { int x = f; f = t; t = x; }
 
@@ -24,7 +24,7 @@ S4 examples:
     N1[:lp 1-]
 
 ; To print numbers from F to T:
-    S4 code:             FT[xI.b]
+    Q4 code:             FT[xI.b]
     Forth equivalent:    F T FOR I . NEXT
     C equivalent:        for (int i = F; i <= T; i)) { printf("%d ", i); }
 
@@ -46,5 +46,5 @@ S4 examples:
 ; One way to display the currently defined code:
     0Hq[xId@#,h7D=(n)]
 
-; To exit S4:
+; To exit Q4:
     xT
