@@ -8,36 +8,36 @@
 *  (a b--a*b)     multiplication
 /  (a b--a/b)     division
 K  (T--n)         multiply TOS by 1000
-O  (T--n)         set TOS to (-T)
-P  (T--n)         increment TOS by 1
-Q  (T--n)         decrement TOS by 1
+O  (T--n)         n: -T
+P  (T--n)         n: T+1 (INCREMENT)
+Q  (T--n)         n: T+1 (INCREMENT)
 S  (a n--q r)     q: a/n, r: a MODULO n (SLASHMOD)
-U  (T--n)         set TOS the absolute value of T
+U  (T--n)         n: the absolute value of T
 
 
 *** BIT MANIPULATION ***
-&    (a b--n)     and
-|    (a b--n)     or
-XOR  (a b--n)     xor
-F    (n1--n2)     flip bits: (one's complement) (e.e - 1011 => 0100)
-R    (V N--T)     T: V shift-right N
-L    (V N--T)     T: V shift-left N
+&    (a b--n)     n: a AND b
+|    (a b--n)     n: a OR b
+XOR  (a b--n)     n: a XOR b
+F    (n1--n2)     n2: flip bits: (one's complement) (e.e - 1011 => 0100)
+R    (V N--T)     T: V shift-right N bits
+L    (V N--T)     T: V shift-left N bits
 
 
 *** STACK ***
-#  (a--a a)       Duplicate TOS                          (Forth DUP)
-\  (a b--a)       Drop TOS                               (Forth DROP)
-$  (a b--b a)     Swap top 2 stack items                 (Forth SWAP)
-%  (a b--a b a)   Push 2nd                               (Forth OVER)
-XS (?--)          Clear the stack, remove all entries    (Forth 0SP)
+#  (a--a a)       Duplicate TOS                          (DUP)
+\  (a b--a)       Drop TOS                               (DROP)
+$  (a b--b a)     Swap top 2 stack items                 (SWAP)
+%  (a b--a b a)   Push 2nd                               (OVER)
+XS (?--)          Clear the stack, remove all entries    (0SP)
 
 
 *** MEMORY ***
   NOTEs: There are 3 address spaces, CODE, VAR, and ABSOLUTE
-         CODE and MEMORY addresses are indexes into that specific area of memory
+         CODE and VAR addresses are indexes into that specific area of memory
          ABSOLUTE addresses are the addresses of the entire machine
 
-       E.G. - '7 4 * c@' returns the lowest byte of HERE
+       E.G. - '7 4 * C@' returns the lowest byte of HERE (ha)
 C@    (a--n)      Fetch byte n from VAR address a
 C!    (n a--)     Store byte n  to  VAR address a
 D@    (a--n)      Fetch byte n from CODE address a
@@ -70,8 +70,8 @@ xx-  (--n)         Push value of register xx, then decrement the register by 1
 
 *** Quotes ***
       NOTES: Quotes are un-named code entities.
-{   (--n)    Begins a quote. Push first char after the '{' on the stack.
-}            Ends a quote.
+{   (--n)    Begins a quote. n: address of first char after the '{' on the stack.
+}   (--)     Ends a quote.
 
 *** INPUT/OUTPUT ***
 .     (N--)       Output N as decimal number
@@ -81,9 +81,8 @@ N     (--)        Output a NEWLINE (13,10,)
 Y     (N--)       Load code from block (Filename is block.NNN)
 Z     (A--)       Output the NULL terminated string at A.
 "     (--)        Output characters until next '"'
-_     (A--A B)    String: copy NULL terminated string to address A (eg - 1000_Hello World!_)
-                      Pushes address B after terminating NULL
-`     (a--)       Code: copy bytes to CODE[ha+] (eg - ha`{"Hello World!"}pg:`^)
+_     (A--A B)    String: copy NULL terminated string to address A (eg - va_Hello World!_)
+                      B: address after terminating NULL
 HX    (--N)       Scan HEX number X until non-HEX digit (not case-sensitive, H3Da0 == H3dA0 )
 0..9  (--N)       Scan DECIMAL number until non digit
                      to specify multiple values, separate them by space (4711 3333)
@@ -112,13 +111,14 @@ G   (T--)    GOTO address T.
 
 
 *** OTHER ***
+`      (a--)        Code: copy bytes to CODE[ha+] (eg - ha`{"Hello World!"}pg:`^)
 T      (--n)        Time (Arduino: millis(), Windows: GetTickCount())
 W      (n--)        Wait (Arduino: delay(),  Windows: Sleep())
 XFO    (fn md--fh)  PC-File: open (fn/md: addr of name/mode, use `S"")
 XFR    (fh--c n)    PC-File: read 1 char (n=0 means EOF)
 XFW    (c fh--)     PC-File: write 1 char
 XFC    (fh--)       PC-File: close
-XIA    (--)         Info: All (CFMRS)
+XIA    (--)         Info: All (SRC)
 XIC    (--)         Info: Code
 XIR    (--)         Info: Registers
 XIS    (--)         Info: Stack
