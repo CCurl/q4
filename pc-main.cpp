@@ -42,7 +42,7 @@ void printString(const char* str) {
 }
 
 void ok() {
-    printString("\r\ns5:"); dumpStack(0); printString(">");
+    printString("\r\nQ4:"); dumpStack(0); printString(">");
 }
 
 void doHistory(const char* txt) {
