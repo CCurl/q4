@@ -86,7 +86,7 @@ void process_arg(char* arg)
 {
     if (*arg == 'n') { runMode = 'n'; }
     else if (*arg == 'i') { runMode = 'i'; }
-    else if ((*arg == 'f') && (*(arg + 1) == ':')) {
+    else if ((*arg == 's') && (*(arg + 1) == ':')) {
         arg = arg + 2;
         strcpy_s(input_fn, sizeof(input_fn), arg);
     }
