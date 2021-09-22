@@ -28,10 +28,10 @@ void vmReset() {
     for (ulong i = 0; i < SZ_MEM; i++) { BMEM[i] = 0; }
     CODE[HERE++] = ';';
     BASE = 10;
-    REG[2] = SZ_CODE;             // C
-    REG[12] = SZ_MEM;             // M
-    REG[17] = SZ_REG;             // R
-    REG[21] = SZ_CODE + SZ_REG;   // V
+    REG[ 2] = SZ_CODE;                // C
+    REG[12] = SZ_MEM;                 // M
+    REG[17] = SZ_REG;                 // R
+    REG[21] = (SZ_REG * 4)+SZ_CODE;   // V
 }
 
 void vmInit(sys_t *theSystem) {
