@@ -1,13 +1,24 @@
 Q4 examples:
 
 ; To enter a comment: 
-    0( here is a comment )
-    ; here is another comment
+    ; here is a comment
   
 ;   if (cc) { print("Yes") } else { print("No") }
     cc{"Yes"}{"No"}?
+    
+; To display the current HERE pointer:
+    ha.
 
- ; xx = (aa == bb) ? cc : dd;
+; To display the current non-zero registers:
+    IXR             ; NOTE: ra is the number of registers allocated for this instance
+
+; To display the current registers, code and stack:
+    XIA
+
+; To create a new function "cb" in the CODE area
+    ha`{dd: ss: 1[ss+ C@ dd+ C!]}cb:`^ ; Note: ` is a "compile to code" opcode, "ha" is "HERE"
+
+; xx = (aa == bb) ? cc : dd;
     aa bb={cc}{dd}?xx:
 
 ; To make sure F < T
@@ -16,28 +27,31 @@ Q4 examples:
      C equivalent:        if (f > t) { int x = f; f = t; t = x; }
 
 ; To do something (in this case, call lp) nn times:
-    nn 1[lp^]
+    nn 1[lp^]             ; NOTE: nn 1[lp^] and 1 nn[lp^] are equivalent
 
 ; To print numbers from F to T:
     Q4 code:             ff tt[I.B]
     Forth equivalent:    F T FOR I . NEXT
     C equivalent:        for (int i = F; i <= T; i)) { printf("%d ", i); }
-
+    
 ; One way to copy N bytes from A to B
-    nn aa bb dd: ss: 1[ss+ C@ dd+ C!]   ; (N F T--) copy bytes
+    dd: ss: 1[ss+ C@ dd+ C!]   ; (N F T--) copy bytes
+    ; ... to create the above as a word/proc/function
+    ha`{dd: ss: 1[ss+ C@ dd+ C!]}cb:`^
+    nn aa bb cb^
     
 ; One way to copy N longs from A to B
     nn aa bb dd: ss: 1[ss @ dd ! ss4+ss: dd4+dd:]   ; (N F T--) copy longs
 
 ; A simple benchmark for a 100 million decrement and FOR loop:
-    {#10<{0.}0?.}n2:          ; A02 (N--)     print N with 0 pad to 2
-    {#100<{0.}0?n2G}n3:       ; A03 (N--)     print N with 0 pad to 3
-    {T$-1KS$."."n3G}el:       ; A51 (T--)     ELAPSED
+    ha`{#10<{0.}0?.}nb:`^          ; nb (N--)     print N with 0 pad to 2
+    ha`{#100<{0.}0?n2G}nc:`^       ; nc (N--)     print N with 0 pad to 3
+    ha`{T$-1KS$."."n3G}el:`^       ; el (T--)     ELAPSED
     100KK T$ (Q) el^
     100KK T$ 1[] el^
 
 ; One way to display the currently defined code:
-    1 ha Q[I D@ #, ':= {I 3- D@ 125={N} 0 ? } 0 ?]
+    ha`{1 ha Q[I D@ #, ':= {I 3- D@ 125={N} 0 ? } 0 ?]}cd:`^
 
 ; To exit Q4:
     XT
