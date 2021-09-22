@@ -325,29 +325,29 @@ addr run(addr pc) {
         case 0: RSP = 0; return -1;
         case ' ': while (CODE[pc] == ' ') { pc++; }         // 32
                 break;
-        case '!': doStore(0, BMEM);      break;             // 33
+        case '!': doStore(0, BMEM);                 break;  // 33
         case '"': buf[1] = 0;                               // 34
             while ((pc < SZ_CODE) && (CODE[pc] != '"')) {
                 buf[0] = CODE[pc++];
                 printString(buf);
             }
-            ++pc;                        break;
-        case '#': push(T);               break;             // 35 (DUP)
-        case '$': t1 = N; N = T; T = t1; break;             // 36 (SWAP)
-        case '%': push(N);               break;             // 37 (OVER)
-        case '&': t1 = pop(); T &= t1;   break;             // 38
-        case '\'': push(CODE[pc++]);     break;             // 39
-        case '(': pc = doBegin(pc);      break;             // 40
-        case ')': pc = doWhile(pc);      break;             // 41
-        case '*': t1 = pop(); T *= t1;   break;             // 42
-        case '+': t1 = pop(); T += t1;   break;             // 43
-        case '-': t1 = pop(); T -= t1;   break;             // 45
-        case '/': t1 = pop(); 
+            ++pc;                                   break;
+        case '#': push(T);                          break;  // 35 (DUP)
+        case '$': t1 = N; N = T; T = t1;            break;  // 36 (SWAP)
+        case '%': push(N);                          break;  // 37 (OVER)
+        case '&': t1 = pop(); T &= t1;              break;  // 38
+        case '\'': push(CODE[pc++]);                break;  // 39
+        case '(': pc = doBegin(pc);                 break;  // 40
+        case ')': pc = doWhile(pc);                 break;  // 41
+        case '*': t1 = pop(); T *= t1;              break;  // 42
+        case '+': t1 = pop(); T += t1;              break;  // 43
+        case ',': printStringF("%c", (char)pop());  break;  // 44 (EMIT)
+        case '-': t1 = pop(); T -= t1;              break;  // 45
+        case '.': printStringF("%ld", pop());       break;  // 46
+        case '/': t1 = pop();                               // 47
             if (t1) { T /= t1; }
             else { isError = 1; }
             break;  // 47
-        case ',': printStringF("%c", (char)pop());  break;  // 44
-        case '.': printStringF("%ld", pop());       break;  // 46
         case '0': case '1': case '2': case '3': case '4':   // 48-57
         case '5': case '6': case '7': case '8': case '9':
             push(ir - '0');
@@ -358,10 +358,7 @@ addr run(addr pc) {
             }
             break;
         case ':': /* FREE */                         break;  // 58
-        case ';': if (RSP < 2) {                             // 59
-                RSP = 0;
-                return pc;
-            }
+        case ';': if (RSP < 2) { RSP = 0; return pc; }       // 59
             rpop();  pc = rpop();
             break;
         case '<': t1 = pop(); T = T < t1  ? 1 : 0;   break;  // 60
@@ -371,18 +368,16 @@ addr run(addr pc) {
             if ( t3 && t1) { rpush(pc); pc = (addr)t1; } // TRUE case
             if (!t3 && t2) { rpush(pc); pc = (addr)t2; } // FALSE case
             break;
-        case '@': doFetch(0, BMEM);           break;
+        case '@': doFetch(0, BMEM);             break;
         case 'A': ir = CODE[pc++];
             if (ir == '@') { doFetch(1, 0); }
             if (ir == '!') { doStore(1, 0); }
             break;
         case 'B': printString(" ");             break;
         case 'C': ir = CODE[pc++];
-            // bp = &BMEM[T];
-            if ((0 <= T) && ((ulong)T < SZ_MEM)) {
-                if (ir == '@') { T = BMEM[T]; }
-                if (ir == '!') { BMEM[T] = (N & 0xff); DROP2; }
-            } break;
+            if (ir == '@') { doFetch(1, BMEM); }
+            if (ir == '!') { doStore(1, BMEM); }
+            break;
         case 'D': ir = CODE[pc++];
             if (ir == '@') { doFetch(1, CODE); }
             if (ir == '!') { doStore(1, CODE); }
@@ -405,20 +400,20 @@ addr run(addr pc) {
             if (ir == '!') { doStore(1, 0); }
             break;
         case 'N': printString("\r\n");          break;
-        case 'O': T = -T;                       break;
-        case 'P': T++;                          break;
-        case 'Q': T--;                          break;
-        case 'R': N = N >> T; DROP1;            break;
-        case 'S': t2 = N; t1 = T;               // SLASHMOD
+        case 'O': T = -T;                       break; // (NEGATE)
+        case 'P': T++;                          break; // (INCREMENT)
+        case 'Q': T--;                          break; // (DECREMENT)
+        case 'R': N = N >> T; DROP1;            break; // (RIGHT-SHIFT)
+        case 'S': t2 = N; t1 = T;                      // (SLASHMOD)
             if (t1 == 0) { isError = 1; }
             else { N = (t2 / t1); T = (t2 % t1); }
             break;
         case 'T': push(millis());               break;
-        case 'U': if (T < 0) { T = -T; }        break;
+        case 'U': if (T < 0) { T = -T; }        break; // (ABS)
         case 'V': /* FREE */                    break;
         case 'W': delay(pop());                 break;
         case 'X': pc = doExt(pc);               break;
-        case 'Y': t1 = pop();  // LOAD
+        case 'Y': t1 = pop();                          // LOAD
             if (__PC__) {
                 if (input_fp) { fclose(input_fp); }
                 sprintf_s(buf, sizeof(buf), "block.%03ld", t1);
@@ -433,11 +428,11 @@ addr run(addr pc) {
         case '\\': DROP1;                       break;       // 92
         case ']': pc = doNext(pc);              break;       // 93
         case '^': rpush(pc); pc = (addr)pop();  break;       // 94
-        case '_': push(T);                                   // 95
+        case '_': push(T);                                   // 95 (S" variant)
             while (CODE[pc] && (CODE[pc] != '_')) { MEM[T++] = CODE[pc++]; }
             ++pc; MEM[T++] = 0;
             break;
-        case '`':                                            // 96
+        case '`':                                            // 96 (String C,)
             while (CODE[pc] && (CODE[pc] != '`')) { CODE[HERE++] = CODE[pc++]; }
             ++pc; break;
         case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
@@ -460,7 +455,7 @@ addr run(addr pc) {
         case '}': if (0 < RSP) { pc = rpop(); }        // 125
                 else { RSP = 0; return pc; }
             break;
-        case '~': T = (T) ? 0 : 1;           break;    // 126
+        case '~': T = (T) ? 0 : 1;           break;    // 126 (Logical NOT)
         }
     }
     return 0;
