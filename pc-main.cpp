@@ -37,7 +37,7 @@ void pinMode(int pin, int mode) { printStringF("-pinMode(%d,%d)-", pin, mode); }
 void delay(DWORD ms) { Sleep(ms); }
 
 void printString(const char* str) {
-    DWORD n = 0, l = strlen(str);
+    DWORD n = 0, l = (DWORD)strlen(str);
     if (l) { WriteConsoleA(hStdOut, str, l, &n, 0); }
 }
 
