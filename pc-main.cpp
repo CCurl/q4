@@ -79,6 +79,8 @@ void loop() {
         fclose(input_fp);
         input_fp = NULL;
         if (runMode == 'n') { isBye = 1; }
+    } else { 
+        isBye = 1; 
     }
 }
 
