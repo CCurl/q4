@@ -111,7 +111,8 @@ G   (T--)    GOTO address T.
 
 
 *** OTHER ***
-`      (a--)        Code: copy bytes to CODE[ha+] (eg - ha`{"Hello World!"}pg:`^)
+`      (--n)        Code: copy bytes to CODE[ha+] (eg - `{"Hello World!"}pg:`^)
+                    n: HERE value before start of copy
 T      (--n)        Time (Arduino: millis(), Windows: GetTickCount())
 W      (n--)        Wait (Arduino: delay(),  Windows: Sleep())
 XFO    (fn md--fh)  PC-File: open (fn/md: addr of name/mode, use `S"")

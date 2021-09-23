@@ -432,7 +432,7 @@ addr run(addr pc) {
             while (CODE[pc] && (CODE[pc] != '_')) { MEM[T++] = CODE[pc++]; }
             ++pc; MEM[T++] = 0;
             break;
-        case '`':                                            // 96 (String C,)
+        case '`': push(HERE);                                // 96 (String C,)
             while (CODE[pc] && (CODE[pc] != '`')) { CODE[HERE++] = CODE[pc++]; }
             ++pc; break;
         case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
