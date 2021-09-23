@@ -3,20 +3,19 @@ Q4 examples:
 ; To enter a comment: 
     ; here is a comment
   
-;   if (cc) { print("Yes") } else { print("No") }
-    cc{"Yes"}{"No"}?
+;   C CODE: if (cc) { print("Yes") } else { print("No") }
+    In Q4:  cc{"Yes"}{"No"}?
     
-; To display the current HERE pointer:
-    ha.
-
 ; To display the current non-zero registers:
     IXR             ; NOTE: ra is the number of registers allocated for this instance
+                    ;       ha is the "HERE" pointer, the only "special" register
 
 ; To display the current registers, code and stack:
     XIA
 
 ; To create a new function "cb" in the CODE area
-    ha`{dd: ss: 1[ss+ C@ dd+ C!]}cb:`^ ; Note: ` is a "compile to code" opcode, "ha" is "HERE"
+    ha`{I.B}lp:`^         ; lp: (--) Print the current I value
+                          ; Note: ` is the "compile to CODE" opcode, "ha" is "HERE"
 
 ; xx = (aa == bb) ? cc : dd;
     aa bb={cc}{dd}?xx:
