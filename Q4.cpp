@@ -91,28 +91,22 @@ int digitToNum(char x, byte base, byte mode) {
     return n;
 }
 
-char numToDigit(short num, byte base, byte toUpper) {
-    char c = num % base + '0';
-    if ('9' < c) { c += 7 + (toUpper ? 0 : 32); }
-    return c;
-}
-
-int regDigit(char x, byte isFirst) {
+int regDigit(char x) {
     int n = -1;
-    if ( isFirst && isBetweenI(x, 'a', 'z')) { n = x - 'a'; }
-    if (!isFirst) { n = digitToNum(x, 36, 3); }
+    if ( isBetweenI(x, 'a', 'z')) { n = x - 'a'; }
     if (n < 0) { isError = 1; }
     return n;
 }
 
 short getRegNum(int pc, byte msg) {
-    int c1 = regDigit(CODE[pc], 1);
-    int c2 = regDigit(CODE[pc+1], 1);
+    int c1 = regDigit(CODE[pc]);
+    int c2 = regDigit(CODE[pc+1]);
+    int c3 = regDigit(CODE[pc+2]);
     if (isError) {
-        if (msg) { printStringF("-%c%c:BadReg-", CODE[pc], CODE[pc+1]); }
+        if (msg) { printStringF("-%c%c%c:BadReg-", CODE[pc], CODE[pc+1], CODE[pc+2]); }
         return -1;
     }
-    short n = (c2*26) + c1;
+    short n = (c1*26*26) + (c2*26) + c3;
     if (SZ_REG <= n) {
         if (msg) { printStringF("-%d:RN_OOB-", n); }
         isError = 1;
@@ -217,17 +211,17 @@ void dumpStack(int hdr) {
 }
 
 char *getRegName(short regNum, char *buf) {
-    int slash = regNum / 26, mod = regNum % 26;
-    buf[0] = 'a' + mod;
-    buf[1] = 'a' + slash;
-    buf[2] = 0;
+    buf[0] = 'a' + (regNum / (26*26));
+    buf[1] = 'a' + (regNum / 26 % 26);
+    buf[2] = 'a' + (regNum % 26);
+    buf[3] = 0;
     return buf;
 }
 
 void dumpRegs() {
     printStringF("\r\nREGISTERS: %d available", SZ_REG);
     int n = 0;
-    char buf[3];
+    char buf[8];
     for (int i = 0; i < SZ_REG; i++) {
         if (REG[i] == 0) { continue; }
         if (((n++) % 5) == 0) { printString("\r\n"); }
@@ -441,7 +435,7 @@ addr run(addr pc) {
         case 's': case 't': case 'u': case 'v': case 'w': case 'x':
         case 'y': case 'z': ir -= 'a';
             t1 = getRegNum(pc-1, 1);
-            pc++;
+            pc += 2;
             if (!isError) {
                 push(MEM[t1]);
                 ir = CODE[pc];
