@@ -98,7 +98,7 @@ int regDigit(char x) {
     return n;
 }
 
-short getRegNum(int pc, byte msg) {
+long getRegNum(int pc, byte msg) {
     int c1 = regDigit(CODE[pc]);
     int c2 = regDigit(CODE[pc+1]);
     int c3 = regDigit(CODE[pc+2]);
@@ -106,7 +106,7 @@ short getRegNum(int pc, byte msg) {
         if (msg) { printStringF("-%c%c%c:BadReg-", CODE[pc], CODE[pc+1], CODE[pc+2]); }
         return -1;
     }
-    short n = (c1*26*26) + (c2*26) + c3;
+    long n = (c1*26*26) + (c2*26) + c3;
     if (SZ_REG <= n) {
         if (msg) { printStringF("-%d:RN_OOB-", n); }
         isError = 1;
@@ -459,15 +459,9 @@ void setCodeByte(addr loc, char ch) {
     if ((0 <= loc) && (loc < SZ_CODE)) { CODE[loc] = ch; }
 }
 
-long registerVal(int reg) {
-    if ((0 <= 'A') && (reg <= 'Z')) { return MEM[reg - 'A']; }
-    if ((0 <= 'a') && (reg <= 'z')) { return MEM[reg - 'a']; }
-    return 0;
-}
-
-addr functionAddress(const char *fn) {
-    CODE[HERE+0] = fn[0];
-    CODE[HERE+1] = fn[1];
-    CODE[HERE+2] = fn[2];
+long registerVal(char *reg) {
+    CODE[HERE + 0] = reg[0];
+    CODE[HERE + 1] = reg[1];
+    CODE[HERE + 2] = reg[2];
     return getRegNum(HERE, 0);
 }

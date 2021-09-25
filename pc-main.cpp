@@ -9,17 +9,18 @@
 
 typedef unsigned char byte;
 
-#define MEM_SZ     (96*1024)
 #define NUM_REGS   MAX_REGS
 #define CODE_SZ    (32*1024)
+#define REGS_SZ    (NUM_REGS*4)
+#define VARS_SZ    (64*1024)
 #define STK_SZ           31
+#define MEM_SZ     (REGS_SZ)+CODE_SZ+VARS_SZ
 
-static byte memory[MEM_SZ+4];
+static byte memory[MEM_SZ];
 static long dstk[STK_SZ + 1];
 static addr rstk[STK_SZ + 1];
 static sys_t mySys;
 static long tibOffset = CODE_SZ - 256;
-static long tibStartBase = (NUM_REGS * 4);
 static byte *tib = NULL;
 
 // These are used only be the PC version
