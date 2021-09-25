@@ -1,4 +1,4 @@
-# Q4 - A Forth Virtual CPU
+# Q4 - A Virtual Forth CPU
 
 Q4 is an implementation of a Virtual Forth CPU whose machine code is human-readable. As such, there is no need for a compiler or assembler.
 
