@@ -33,40 +33,39 @@ XS (?--)          Clear the stack, remove all entries    (0SP)
 
 
 *** MEMORY ***
-  NOTEs: There are 3 address spaces, CODE, VAR, and ABSOLUTE
-         CODE and VAR addresses are indexes into that specific area of memory
+  NOTEs: There are 2 address spaces, USER, and ABSOLUTE
+         The USER memory space is organized as follows: { REGS: (aar*4) bytes, CODE (aac*1) bytes, REST (whatever is left over) }
          ABSOLUTE addresses are the addresses of the entire machine
 
-       E.G. - '7 4 * C@' returns the lowest byte of HERE (ha)
-C@    (a--n)      Fetch byte n from VAR address a
-C!    (n a--)     Store byte n  to  VAR address a
-D@    (a--n)      Fetch byte n from CODE address a
-D!    (n a--)     Store byte n  to  CODE address a
+       E.G. - '7 4 * @' returns the value of register aah (HERE)
+              'aar 1- 4* @' returns the value of the last defined REGISTER
+C@    (a--n)      Fetch byte n from USER address a
+C!    (n a--)     Store byte n  to  USER address a
+@     (a--n)      Fetch long from USER address a
+!     (n a--)     Store long n to USER address a
 A@    (a--n)      Fetch byte n from ABSOLUTE address a
 A!    (n a--)     Store byte n  to  ABSOLUTE address a
 M@    (a--n)      Fetch long n from ABSOLUTE address a
 M!    (n a--)     Store long n  to  ABSOLUTE address a
-@     (a--n)      Fetch long from VAR address a
-!     (n a--)     Store long n to VAR address a
+D@    (a--n)      Fetch byte n from CODE address a
+D!    (n a--)     Store byte n  to  CODE address a
 
 
 *** REGISTERS ***
-  NOTES: The registers are stored in beginning of the VAR addresses: aa = VAR[0]
-         A register is exactly 2 lowercase alpha characters: [aa .. zz]
-         The maximun number of registers is 26*26 = 676 registers.
+  NOTES: The registers are stored in beginning of the Q4 USER memory
+  A register is exactly 3 lowercase alpha characters: [aaa .. zzz]
+         The maximun number of registers is 26##** = 17,576 registers.
          Register initial values:
-         - ca: Size of CODE area
-         - da: Start of CODE area
-         - ha: HERE **special**
-         - ma: Start of VARS area
-         - sa: Start of system structure
-         - va: First available VAR address (byte address)
-         - za: Size of VARS area
+         - aac: Size of CODE area (soft)
+         - aah: HERE **special**
+         - aam: Size of USER memory
+         - aar: Number of registers defined
+         - aav: First available address after the CODE area (soft)
          - All other registers set to 0
-xx:  (n--)         Set register xx value to n
-xx   (--n)         Push value of register xx (X:[A..Z])
-xx+  (--n)         Push value of register xx, then increment the register by 1
-xx-  (--n)         Push value of register xx, then decrement the register by 1
+xxx:  (n--)         Set register xxx value to n
+xxx   (--n)         Push value of register xxx (X:[A..Z])
+xxx+  (--n)         Push value of register xxx, then increment the register by 1
+xxx-  (--n)         Push value of register xxx, then decrement the register by 1
 
 *** Quotes ***
       NOTES: Quotes are un-named code entities.
@@ -111,7 +110,7 @@ G   (T--)    GOTO address T.
 
 
 *** OTHER ***
-`      (--n)        Code: copy bytes to CODE[ha+] (eg - `{"Hello World!"}pg:`^)
+`      (--n)        Code: copy bytes to CODE[aah+] (eg - `{"Hello World!"}pg:`^)
                     n: HERE value before start of copy
 T      (--n)        Time (Arduino: millis(), Windows: GetTickCount())
 W      (n--)        Wait (Arduino: delay(),  Windows: Sleep())
