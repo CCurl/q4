@@ -92,27 +92,19 @@ int digitToNum(char x, byte base, byte mode) {
 }
 
 int regDigit(char x) {
-    int n = -1;
-    if ( isBetweenI(x, 'a', 'z')) { n = x - 'a'; }
-    if (n < 0) { isError = 1; }
-    return n;
+    return isBetweenI(x, 'a', 'z') ? x - 'a' : -1;
 }
 
-long getRegNum(int pc, byte msg) {
-    int c1 = regDigit(CODE[pc]);
-    int c2 = regDigit(CODE[pc+1]);
-    int c3 = regDigit(CODE[pc+2]);
-    if (isError) {
-        if (msg) { printStringF("-%c%c%c:BadReg-", CODE[pc], CODE[pc+1], CODE[pc+2]); }
-        return -1;
-    }
-    long n = (c1*26*26) + (c2*26) + c3;
-    if (SZ_REG <= n) {
-        if (msg) { printStringF("-%d:RN_OOB-", n); }
-        isError = 1;
-        return -1;
-    }
-    return n;
+long getRegNum(int pc, long *prn) {
+    *prn = regDigit(CODE[pc]);
+    if (*(prn) < 0) { return pc; }
+    int d = regDigit(CODE[++pc]);
+    if (d < 0) { return pc; }
+    *(prn) = (*(prn) * 26) + d;
+    d = regDigit(CODE[++pc]);
+    if (d < 0) { return pc; }
+    *(prn) = (*(prn) * 26) + d;
+    return pc+1;
 }
 
 addr doDefineQuote(addr pc) {
@@ -353,13 +345,13 @@ addr run(addr pc) {
             break;
         case ':': /* FREE */                         break;  // 58
         case ';': if (RSP < 2) { RSP = 0; return pc; }       // 59
-            rpop();  pc = rpop();
-            break;
-        case '<': t1 = pop(); T = T < t1  ? 1 : 0;   break;  // 60
+                rpop();  pc = rpop();
+                break;
+        case '<': t1 = pop(); T = T < t1 ? 1 : 0;   break;  // 60
         case '=': t1 = pop(); T = T == t1 ? 1 : 0;   break;  // 61
-        case '>': t1 = pop(); T = T > t1  ? 1 : 0;   break;  // 62
+        case '>': t1 = pop(); T = T > t1 ? 1 : 0;   break;  // 62
         case '?': t2 = pop(); t1 = pop(); t3 = pop();        // 63
-            if ( t3 && t1) { rpush(pc); pc = (addr)t1; } // TRUE case
+            if (t3 && t1) { rpush(pc); pc = (addr)t1; } // TRUE case
             if (!t3 && t2) { rpush(pc); pc = (addr)t2; } // FALSE case
             break;
         case '@': doFetch(0, BMEM);             break;
@@ -412,12 +404,14 @@ addr run(addr pc) {
                 if (input_fp) { fclose(input_fp); }
                 sprintf_s(buf, sizeof(buf), "block.%03ld", t1);
                 fopen_s(&input_fp, buf, "rt");
-            } else { printString("-l:pc only-"); }
+            }
+            else { printString("-l:pc only-"); }
             break;
-        case 'Z':  if ((0 <= T) && ((ulong)T < SZ_MEM)) { 
+        case 'Z':  if ((0 <= T) && ((ulong)T < SZ_MEM)) {
             bp = &BMEM[pop()];
-            printString((char*)bp); }
-            break;
+            printString((char*)bp);
+        }
+                break;
         case '[': pc = doFor(pc);               break;       // 91
         case '\\': DROP1;                       break;       // 92
         case ']': pc = doNext(pc);              break;       // 93
@@ -434,15 +428,17 @@ addr run(addr pc) {
         case 'm': case 'n': case 'o': case 'p': case 'q': case 'r':
         case 's': case 't': case 'u': case 'v': case 'w': case 'x':
         case 'y': case 'z': ir -= 'a';
-            t1 = getRegNum(pc-1, 1);
-            pc += 2;
-            if (!isError) {
+            pc = getRegNum(pc-1, &t1);
+            if (isBetweenI(t1, 0, SZ_REG-1)) { 
                 push(MEM[t1]);
                 ir = CODE[pc];
                 //printf("-reg:%c%c:%ld-", CODE[pc-2], CODE[pc-1], T);
                 if (ir == '+') { ++pc; ++MEM[t1]; }
                 if (ir == '-') { ++pc; --MEM[t1]; }
                 if (ir == ':') { DROP1; ++pc; MEM[t1] = pop(); }
+            } else {
+                isError = 1;
+                printString("-regOOB-");
             } break;
         case '{': pc = doDefineQuote(pc);    break;    // 123
         case '|': t1 = pop(); T |= t1;       break;    // 124

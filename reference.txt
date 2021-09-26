@@ -53,19 +53,20 @@ D!    (n a--)     Store byte n  to  CODE address a
 
 *** REGISTERS ***
   NOTES: The registers are stored in beginning of the Q4 USER memory
-  A register is exactly 3 lowercase alpha characters: [aaa .. zzz]
+  A register all lowercase alpha characters, up to 3 in length: [a .. zzz]
          The maximun number of registers is 26##** = 17,576 registers.
          Register initial values:
-         - aac: Size of CODE area (soft)
-         - aah: HERE **special**
-         - aam: Size of USER memory
-         - aar: Number of registers defined
-         - aav: First available address after the CODE area (soft)
+         - c: Size of CODE area (soft)
+         - h: HERE **special**
+         - m: Size of USER memory
+         - r: Number of registers defined
+         - v: First available address after the CODE area (soft)
          - All other registers set to 0
 xxx:  (n--)         Set register xxx value to n
-xxx   (--n)         Push value of register xxx (X:[A..Z])
+xxx   (--n)         Push value of register xxx
 xxx+  (--n)         Push value of register xxx, then increment the register by 1
 xxx-  (--n)         Push value of register xxx, then decrement the register by 1
+
 
 *** Quotes ***
       DEF: Quotes are un-named code entities/routines. Quotes can be nested.
@@ -75,6 +76,7 @@ xxx-  (--n)         Push value of register xxx, then decrement the register by 1
              When executing, perform a return. (PC: RStack.pop()).
 ^   (T--)    Call quote at address T. (RStack.push(PC), PC: T)
 G   (T--)    GOTO address T. (PC: T)
+
 
 *** INPUT/OUTPUT ***
 .     (N--)       Output N as decimal number
