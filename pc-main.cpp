@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <conio.h>
 #include "Q4.h"
 
 typedef unsigned char byte;
@@ -40,6 +41,14 @@ void delay(DWORD ms) { Sleep(ms); }
 void printString(const char* str) {
     DWORD n = 0, l = (DWORD)strlen(str);
     if (l) { WriteConsoleA(hStdOut, str, l, &n, 0); }
+}
+
+int getChar() {
+    return _getch();
+}
+
+int charAvailable() {
+    return _kbhit();
 }
 
 void ok() {
@@ -120,6 +129,11 @@ int main(int argc, char** argv) {
 
     vmInit(createSystem());
 
+    printf("test: ");
+    int num = 0;
+    while (!charAvailable()) { if (++num > 100000) { num = 0; printf("."); } }
+    int cc = getChar();
+    printf("%c, (%d)", cc, cc);
     input_fn[0] = 0;
     input_fp = NULL;
 

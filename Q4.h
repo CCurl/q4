@@ -50,10 +50,10 @@ extern void vmInit(sys_t *Sys);
 extern addr run(addr pc);
 extern void dumpStack(int hdr);
 extern void setCodeByte(addr loc, char ch);
-extern long registerVal(int reg);
-extern addr functionAddress(int fn);
 extern void printString(const char*);
 extern void printStringF(const char* fmt, ...);
+extern int getChar();
+extern int charAvailable();
 
 #ifdef _WIN32
 #define __PC__ 1

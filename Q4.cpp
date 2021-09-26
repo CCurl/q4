@@ -289,6 +289,10 @@ addr doExt(addr pc) {
         if (ir == 'R') { dumpRegs(); }
         if (ir == 'S') { dumpStack(0); }
         break;
+    case 'K': ir = CODE[pc++];
+        if (ir == 'Y') { push(getChar()); }
+        if (ir == '?') { push(charAvailable()); }
+        break;
     case 'O': ir = CODE[pc++];
         if (ir == 'R') { N ^= T; DROP1; }
         break;

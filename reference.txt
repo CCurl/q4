@@ -81,6 +81,8 @@ G   (T--)    GOTO address T. (PC: T)
 *** INPUT/OUTPUT ***
 .     (N--)       Output N as decimal number
 ,     (N--)       Output N as character (EMIT)
+XK?   (--B)       B: 1 if a character is available, else 0.
+XKY   (--C)       Retrieve 1 char C. If no key is available, wait.
 B     (--)        Output a BLANK (32,)
 N     (--)        Output a NEWLINE (13,10,)
 Y     (N--)       Load code from block (Filename is block.NNN)
