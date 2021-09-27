@@ -41,14 +41,15 @@ XS (?--)          Clear the stack, remove all entries    (0SP)
               'aar 1- 4* @' returns the value of the last defined REGISTER
 C@    (a--n)      Fetch byte n from USER address a
 C!    (n a--)     Store byte n  to  USER address a
-@     (a--n)      Fetch long from USER address a
-!     (n a--)     Store long n to USER address a
-A@    (a--n)      Fetch byte n from ABSOLUTE address a
-A!    (n a--)     Store byte n  to  ABSOLUTE address a
-M@    (a--n)      Fetch long n from ABSOLUTE address a
-M!    (n a--)     Store long n  to  ABSOLUTE address a
+@     (a--n)      Fetch long n from USER address a
+!     (n a--)     Store long n  to  USER address a
+AC@   (a--n)      Fetch byte n from ABSOLUTE address a
+AC!   (n a--)     Store byte n  to  ABSOLUTE address a
+A@    (a--n)      Fetch long n from ABSOLUTE address a
+A!    (n a--)     Store long n  to  ABSOLUTE address a
 D@    (a--n)      Fetch byte n from CODE address a
 D!    (n a--)     Store byte n  to  CODE address a
+                  NOTE: CODE address [0] is USER address [NUM-REGS*4]
 
 
 *** REGISTERS ***

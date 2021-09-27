@@ -24,14 +24,15 @@ sys_t *sys;
 void vmReset() {
     DSP = RSP = LSP = 0;
     sys->mem = (long*)sys->bmem;
-    sys->code = &BMEM[SZ_REG*4];
+    sys->code = &BMEM[NUM_REGS*4];
     for (ulong i = 0; i < SZ_MEM; i++) { BMEM[i] = 0; }
     CODE[HERE++] = ';';
     BASE = 10;
-    REG[ 2] = SZ_CODE;                // C
-    REG[12] = SZ_MEM;                 // M
-    REG[17] = SZ_REG;                 // R
-    REG[21] = (SZ_REG * 4)+SZ_CODE;   // V
+    REG[ 2] = SZ_CODE;                   // C
+    REG[12] = SZ_MEM;                    // M
+    REG[17] = NUM_REGS;                  // R
+    REG[18] = (long)sys;                 // S
+    REG[21] = (NUM_REGS * 4)+SZ_CODE;    // V
 }
 
 void vmInit(sys_t *theSystem) {
@@ -211,10 +212,10 @@ char *getRegName(short regNum, char *buf) {
 }
 
 void dumpRegs() {
-    printStringF("\r\nREGISTERS: %d available", SZ_REG);
+    printStringF("\r\nREGISTERS: %d available", NUM_REGS);
     int n = 0;
     char buf[8];
-    for (int i = 0; i < SZ_REG; i++) {
+    for (int i = 0; i < NUM_REGS; i++) {
         if (REG[i] == 0) { continue; }
         if (((n++) % 5) == 0) { printString("\r\n"); }
         printStringF("%s: %-12ld  ", getRegName(i, buf), REG[i]);
@@ -351,19 +352,20 @@ addr run(addr pc) {
         case ';': if (RSP < 2) { RSP = 0; return pc; }       // 59
                 rpop();  pc = rpop();
                 break;
-        case '<': t1 = pop(); T = T < t1 ? 1 : 0;   break;  // 60
+        case '<': t1 = pop(); T = T < t1 ? 1 : 0;    break;  // 60
         case '=': t1 = pop(); T = T == t1 ? 1 : 0;   break;  // 61
-        case '>': t1 = pop(); T = T > t1 ? 1 : 0;   break;  // 62
+        case '>': t1 = pop(); T = T > t1 ? 1 : 0;    break;  // 62
         case '?': t2 = pop(); t1 = pop(); t3 = pop();        // 63
             if (t3 && t1) { rpush(pc); pc = (addr)t1; } // TRUE case
             if (!t3 && t2) { rpush(pc); pc = (addr)t2; } // FALSE case
             break;
-        case '@': doFetch(0, BMEM);             break;
-        case 'A': ir = CODE[pc++];
-            if (ir == '@') { doFetch(1, 0); }
-            if (ir == '!') { doStore(1, 0); }
+        case '@': doFetch(0, BMEM);                  break;
+        case 'A': ir = CODE[pc++]; t2 = 0;
+            if (ir == 'C') { t2 = 1; ir = CODE[pc++]; }
+            if (ir == '@') { doFetch((byte)t2, 0); }
+            if (ir == '!') { doStore((byte)t2, 0); }
             break;
-        case 'B': printString(" ");             break;
+        case 'B': printString(" ");                  break;
         case 'C': ir = CODE[pc++];
             if (ir == '@') { doFetch(1, BMEM); }
             if (ir == '!') { doStore(1, BMEM); }
@@ -372,37 +374,34 @@ addr run(addr pc) {
             if (ir == '@') { doFetch(1, CODE); }
             if (ir == '!') { doStore(1, CODE); }
             break;
-        case 'E': /* FREE */                    break;
-        case 'F': T = ~T;                       break;
-        case 'G': pc = (addr)pop();             break;
+        case 'E': /* FREE */                         break;
+        case 'F': T = ~T;                            break;
+        case 'G': pc = (addr)pop();                  break;
         case 'H': push(0);
             t1 = digitToNum(CODE[pc], 0x10, 2);
             while (0 <= t1) {
                 T = (T * 0x10) + t1;
                 t1 = digitToNum(CODE[++pc], 0x10, 2);
             } break;
-        case 'I': doIJK(pc, 1);                 break;
-        case 'J': doIJK(pc, 2);                 break;
-        case 'K': T *= 1000;                    break;
-        case 'L': N = N << T; DROP1;            break;
-        case 'M': ir = CODE[pc++];
-            if (ir == '@') { doFetch(1, 0); }
-            if (ir == '!') { doStore(1, 0); }
-            break;
-        case 'N': printString("\r\n");          break;
-        case 'O': T = -T;                       break; // (NEGATE)
-        case 'P': T++;                          break; // (INCREMENT)
-        case 'Q': T--;                          break; // (DECREMENT)
-        case 'R': N = N >> T; DROP1;            break; // (RIGHT-SHIFT)
+        case 'I': doIJK(pc, 1);                      break;
+        case 'J': doIJK(pc, 2);                      break;
+        case 'K': T *= 1000;                         break;
+        case 'L': N = N << T; DROP1;                 break;
+        case 'M': /* FREE */;                        break;
+        case 'N': printString("\r\n");               break;
+        case 'O': T = -T;                            break; // (NEGATE)
+        case 'P': T++;                               break; // (INCREMENT)
+        case 'Q': T--;                               break; // (DECREMENT)
+        case 'R': N = N >> T; DROP1;                 break; // (RIGHT-SHIFT)
         case 'S': t2 = N; t1 = T;                      // (SLASHMOD)
-            if (t1 == 0) { isError = 1; }
+            if (t1 == 0) { isError = 1; printString("-divByZero-"); }
             else { N = (t2 / t1); T = (t2 % t1); }
             break;
-        case 'T': push(millis());               break;
-        case 'U': if (T < 0) { T = -T; }        break; // (ABS)
-        case 'V': /* FREE */                    break;
-        case 'W': delay(pop());                 break;
-        case 'X': pc = doExt(pc);               break;
+        case 'T': push(millis());                    break;
+        case 'U': if (T < 0) { T = -T; }             break; // (ABS)
+        case 'V': /* FREE */                         break;
+        case 'W': delay(pop());                      break;
+        case 'X': pc = doExt(pc);                    break;
         case 'Y': t1 = pop();                          // LOAD
             if (__PC__) {
                 if (input_fp) { fclose(input_fp); }
@@ -416,11 +415,11 @@ addr run(addr pc) {
             printString((char*)bp);
         }
                 break;
-        case '[': pc = doFor(pc);               break;       // 91
-        case '\\': DROP1;                       break;       // 92
-        case ']': pc = doNext(pc);              break;       // 93
-        case '^': rpush(pc); pc = (addr)pop();  break;       // 94
-        case '_': push(T);                                   // 95 (S" variant)
+        case '[': pc = doFor(pc);                    break;       // 91
+        case '\\': DROP1;                            break;       // 92
+        case ']': pc = doNext(pc);                   break;       // 93
+        case '^': rpush(pc); pc = (addr)pop();       break;       // 94
+        case '_': push(T);                                        // 95 (S" variant)
             while (CODE[pc] && (CODE[pc] != '_')) { MEM[T++] = CODE[pc++]; }
             ++pc; MEM[T++] = 0;
             break;
@@ -433,7 +432,7 @@ addr run(addr pc) {
         case 's': case 't': case 'u': case 'v': case 'w': case 'x':
         case 'y': case 'z': ir -= 'a';
             pc = getRegNum(pc-1, &t1);
-            if (isBetweenI(t1, 0, SZ_REG-1)) { 
+            if (isBetweenI(t1, 0, NUM_REGS-1)) { 
                 push(MEM[t1]);
                 ir = CODE[pc];
                 //printf("-reg:%c%c:%ld-", CODE[pc-2], CODE[pc-1], T);
@@ -444,12 +443,12 @@ addr run(addr pc) {
                 isError = 1;
                 printString("-regOOB-");
             } break;
-        case '{': pc = doDefineQuote(pc);    break;    // 123
-        case '|': t1 = pop(); T |= t1;       break;    // 124
-        case '}': if (0 < RSP) { pc = rpop(); }        // 125
+        case '{': pc = doDefineQuote(pc);            break;    // 123
+        case '|': t1 = pop(); T |= t1;               break;    // 124
+        case '}': if (0 < RSP) { pc = rpop(); }                // 125
                 else { RSP = 0; return pc; }
             break;
-        case '~': T = (T) ? 0 : 1;           break;    // 126 (Logical NOT)
+        case '~': T = (T) ? 0 : 1;                   break;    // 126 (Logical NOT)
         }
     }
     return 0;
@@ -463,5 +462,7 @@ long registerVal(char *reg) {
     CODE[HERE + 0] = reg[0];
     CODE[HERE + 1] = reg[1];
     CODE[HERE + 2] = reg[2];
-    return getRegNum(HERE, 0);
+    long val = 0;
+    getRegNum(HERE, &val);
+    return val;
 }

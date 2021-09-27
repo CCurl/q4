@@ -10,12 +10,12 @@
 
 typedef unsigned char byte;
 
-#define NUM_REGS   MAX_REGS
+#define REGS_NUM   MAX_REGS
 #define CODE_SZ    (32*1024)
-#define REGS_SZ    (NUM_REGS*4)
+#define REGS_SZ    (REGS_NUM*4)
 #define VARS_SZ    (64*1024)
 #define STK_SZ           31
-#define MEM_SZ     (REGS_SZ)+CODE_SZ+VARS_SZ
+#define MEM_SZ     REGS_SZ+CODE_SZ+VARS_SZ
 
 static byte memory[MEM_SZ];
 static long dstk[STK_SZ + 1];
@@ -24,7 +24,7 @@ static sys_t mySys;
 static long tibOffset = CODE_SZ - 256;
 static byte *tib = NULL;
 
-// These are used only be the PC version
+// These are used only by the PC version
 static HANDLE hStdOut = 0;
 static char input_fn[32];
 static char runMode = 'i';
@@ -81,7 +81,6 @@ void loop() {
     if (fp == stdin) { ok(); }
     if (fgets(tib, 128, fp) == tib) {
         if (fp == stdin) { doHistory(tib); }
-        // strToCode(nTib, tib, 1);
         run(tibOffset);
         return;
     }
@@ -115,7 +114,7 @@ sys_t *createSystem() {
     mySys.bmem = memory;
     mySys.code_sz = CODE_SZ;
     mySys.mem_sz = MEM_SZ;
-    mySys.reg_sz = NUM_REGS;
+    mySys.num_regs = REGS_NUM;
     mySys.dstack = dstk;
     mySys.rstack = rstk;
     mySys.stack_sz = STK_SZ;
@@ -129,11 +128,6 @@ int main(int argc, char** argv) {
 
     vmInit(createSystem());
 
-    printf("test: ");
-    int num = 0;
-    while (!charAvailable()) { if (++num > 100000) { num = 0; printf("."); } }
-    int cc = getChar();
-    printf("%c, (%d)", cc, cc);
     input_fn[0] = 0;
     input_fp = NULL;
 
@@ -142,8 +136,6 @@ int main(int argc, char** argv) {
         char* cp = argv[i];
         if (*cp == '-') { process_arg(++cp); }
         else { 
-            //doHistory(cp);
-            //doHistory("\n");
             strToCode(tibOffset, cp, 1);
             run(tibOffset);
         }

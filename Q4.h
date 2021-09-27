@@ -15,17 +15,17 @@ typedef struct {
 } LOOP_ENTRY_T;
 
 typedef struct {
-    long   dsp, rsp, lsp;
-    byte   *code;
-    long   *mem;
     byte   *bmem;
+    long   *mem;
+    byte   *code;
     ulong   here;
     ulong   code_sz;
     ulong   mem_sz;
-    short   reg_sz;
+    ushort  num_regs;
     ushort  stack_sz;
     long   *dstack;
     addr   *rstack;
+    long   dsp, rsp, lsp;
     LOOP_ENTRY_T lstack[4];
 } sys_t;
 
@@ -44,7 +44,7 @@ extern sys_t *sys;
 #define SZ_CODE    sys->code_sz
 #define SZ_MEM     sys->mem_sz
 #define SZ_STK     sys->stack_sz
-#define SZ_REG     sys->reg_sz
+#define NUM_REGS   sys->num_regs
 
 extern void vmInit(sys_t *Sys);
 extern addr run(addr pc);

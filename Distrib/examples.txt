@@ -44,13 +44,13 @@ Q4 examples:
 
 ; A simple benchmark for a 100 million decrement and FOR loop:
     `{#10<{0.}0?.}nb:`^          ; nb (N--)     print N with 0 pad to 2
-    `{#100<{0.}0?n2G}nc:`^       ; nc (N--)     print N with 0 pad to 3
-    `{T$-1KS$."."n3G}el:`^       ; el (T--)     ELAPSED
+    `{#100<{0.}0?nbG}nc:`^       ; nc (N--)     print N with 0 pad to 3
+    `{T$-1KS$."."ncG}el:`^       ; el (T--)     ELAPSED
     100KK T$ (Q) el^
     100KK T$ 1[] el^
 
 ; One way to display the currently defined code:
-    `{1 ha Q[I D@ #, ':= {I 3- D@ 125={N} 0 ? } 0 ?]}cd:`^
+    `{1 hQ[I D@ #, ':= {I 3- D@ 125={N} 0 ? } 0 ?]}cd:`^
 
 ; To exit Q4:
     XT
