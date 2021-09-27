@@ -18,21 +18,21 @@ sys_t *sys;
 #define R        RSTK[RSP]
 #define DROP1    pop()
 #define DROP2    pop(); pop()
-#define BASE     MEM[1]
-#define HERE     MEM[7]
+#define BASE     REG[1]
+#define HERE     REG[7]
 
 void vmReset() {
     DSP = RSP = LSP = 0;
     sys->mem = (long*)sys->bmem;
-    sys->code = &BMEM[NUM_REGS*4];
+    sys->user = &BMEM[NUM_REGS*4];
     for (ulong i = 0; i < SZ_MEM; i++) { BMEM[i] = 0; }
-    CODE[HERE++] = ';';
-    BASE = 10;
-    REG[ 2] = SZ_CODE;                   // C
+    USER[HERE++] = ';';
+    REG[ 1] = 10;                        // B (BASE)
+    REG[ 2] = SZ_USER;                   // C
     REG[12] = SZ_MEM;                    // M
     REG[17] = NUM_REGS;                  // R
     REG[18] = (long)sys;                 // S
-    REG[21] = (NUM_REGS * 4)+SZ_CODE;    // V
+    REG[21] = (NUM_REGS * 4)+SZ_USER;    // V
 }
 
 void vmInit(sys_t *theSystem) {
@@ -97,12 +97,12 @@ int regDigit(char x) {
 }
 
 long getRegNum(int pc, long *prn) {
-    *prn = regDigit(CODE[pc]);
+    *prn = regDigit(USER[pc]);
     if (*(prn) < 0) { return pc; }
-    int d = regDigit(CODE[++pc]);
+    int d = regDigit(USER[++pc]);
     if (d < 0) { return pc; }
     *(prn) = (*(prn) * 26) + d;
-    d = regDigit(CODE[++pc]);
+    d = regDigit(USER[++pc]);
     if (d < 0) { return pc; }
     *(prn) = (*(prn) * 26) + d;
     return pc+1;
@@ -111,8 +111,8 @@ long getRegNum(int pc, long *prn) {
 addr doDefineQuote(addr pc) {
     int depth = 1;
     push(pc);
-    while ((pc < SZ_CODE) && CODE[pc]) {
-        char c = CODE[pc++];
+    while ((pc < SZ_USER) && USER[pc]) {
+        char c = USER[pc++];
         if (c == '{') { ++depth; }
         if (c == '}') {
             --depth;
@@ -127,7 +127,7 @@ addr doDefineQuote(addr pc) {
 addr doBegin(addr pc) {
     rpush(pc);
     if (T == 0) {
-        while ((pc < SZ_CODE) && (CODE[pc] != ')')) { pc++; }
+        while ((pc < SZ_USER) && (USER[pc] != ')')) { pc++; }
     }
     return pc;
 }
@@ -176,7 +176,7 @@ addr doIJK(addr pc, int mode) {
 }
 
 void dumpCode() {
-    printStringF("\r\nCODE: size: %d bytes, HERE=%d", SZ_CODE, HERE);
+    printStringF("\r\nUSER: size: %d bytes, HERE=%d", SZ_USER, HERE);
     if (HERE == 0) { printString("\r\n(no code defined)"); return; }
     addr x = HERE;
     int ti = 0, npl = 20;
@@ -186,8 +186,8 @@ void dumpCode() {
             if (ti) { txt[ti] = 0;  printStringF(" ; %s", txt); ti = 0; }
             printStringF("\n\r%05d: ", i);
         }
-        txt[ti++] = (CODE[i] < 32) ? '.' : CODE[i];
-        printStringF(" %3d", CODE[i]);
+        txt[ti++] = (USER[i] < 32) ? '.' : USER[i];
+        printStringF(" %3d", USER[i]);
     }
     while (x % npl) {
         printString("    ");
@@ -231,7 +231,7 @@ void dumpAll() {
 }
 
 addr doFile(addr pc) {
-    int ir = CODE[pc++];
+    int ir = USER[pc++];
     switch (ir) {
 #ifdef __PC__
     case 'C':
@@ -264,17 +264,17 @@ addr doFile(addr pc) {
 }
 
 addr doPin(addr pc) {
-    int ir = CODE[pc++];
+    int ir = USER[pc++];
     long pin = pop(), val = 0;
     switch (ir) {
     case 'I': pinMode(pin, INPUT); break;
     case 'U': pinMode(pin, INPUT_PULLUP); break;
     case 'O': pinMode(pin, OUTPUT); break;
-    case 'R': ir = CODE[pc++];
+    case 'R': ir = USER[pc++];
         if (ir == 'D') { push(digitalRead(pin)); }
         if (ir == 'A') { push(analogRead(pin)); }
         break;
-    case 'W': ir = CODE[pc++]; val = pop();
+    case 'W': ir = USER[pc++]; val = pop();
         if (ir == 'D') { digitalWrite(pin, val); }
         if (ir == 'A') { analogWrite(pin, val); }
         break;
@@ -283,20 +283,20 @@ addr doPin(addr pc) {
 }
 
 addr doExt(addr pc) {
-    byte ir = CODE[pc++];
+    byte ir = USER[pc++];
     switch (ir) {
     case 'F': pc = doFile(pc);          break;
-    case 'I': ir = CODE[pc++];
+    case 'I': ir = USER[pc++];
         if (ir == 'A') { dumpAll(); }
         if (ir == 'C') { dumpCode(); }
         if (ir == 'R') { dumpRegs(); }
         if (ir == 'S') { dumpStack(0); }
         break;
-    case 'K': ir = CODE[pc++];
+    case 'K': ir = USER[pc++];
         if (ir == 'Y') { push(getChar()); }
         if (ir == '?') { push(charAvailable()); }
         break;
-    case 'O': ir = CODE[pc++];
+    case 'O': ir = USER[pc++];
         if (ir == 'R') { N ^= T; DROP1; }
         break;
     case 'P': pc = doPin(pc);           break;
@@ -312,16 +312,16 @@ addr run(addr pc) {
     byte* bp;
     isError = 0;
     while (!isError && (0 < pc)) {
-        byte ir = CODE[pc++];
+        byte ir = USER[pc++];
         //printf("\n-pc:%3ld,ir:%3d(%c),DSP:%d,RSP:%d,T:%ld-", pc-1,ir,ir?ir:'.',DSP,RSP,T);
         switch (ir) {
         case 0: RSP = 0; return -1;
-        case ' ': while (CODE[pc] == ' ') { pc++; }         // 32
+        case ' ': while (USER[pc] == ' ') { pc++; }         // 32
                 break;
-        case '!': doStore(0, BMEM);                 break;  // 33
+        case '!': doStore(0, USER);                 break;  // 33
         case '"': buf[1] = 0;                               // 34
-            while ((pc < SZ_CODE) && (CODE[pc] != '"')) {
-                buf[0] = CODE[pc++];
+            while ((pc < SZ_USER) && (USER[pc] != '"')) {
+                buf[0] = USER[pc++];
                 printString(buf);
             }
             ++pc;                                   break;
@@ -329,7 +329,7 @@ addr run(addr pc) {
         case '$': t1 = N; N = T; T = t1;            break;  // 36 (SWAP)
         case '%': push(N);                          break;  // 37 (OVER)
         case '&': t1 = pop(); T &= t1;              break;  // 38
-        case '\'': push(CODE[pc++]);                break;  // 39
+        case '\'': push(USER[pc++]);                break;  // 39
         case '(': pc = doBegin(pc);                 break;  // 40
         case ')': pc = doWhile(pc);                 break;  // 41
         case '*': t1 = pop(); T *= t1;              break;  // 42
@@ -344,10 +344,10 @@ addr run(addr pc) {
         case '0': case '1': case '2': case '3': case '4':   // 48-57
         case '5': case '6': case '7': case '8': case '9':
             push(ir - '0');
-            t1 = CODE[pc] - '0';
+            t1 = USER[pc] - '0';
             while ((0 <= t1) && (t1 <= 9)) {
                 T = (T * 10) + t1;
-                t1 = CODE[++pc] - '0';
+                t1 = USER[++pc] - '0';
             }
             break;
         case ':': /* FREE */                         break;  // 58
@@ -361,41 +361,38 @@ addr run(addr pc) {
             if (t3 && t1) { rpush(pc); pc = (addr)t1; } // TRUE case
             if (!t3 && t2) { rpush(pc); pc = (addr)t2; } // FALSE case
             break;
-        case '@': doFetch(0, BMEM);                  break;
-        case 'A': ir = CODE[pc++]; t2 = 0;
-            if (ir == 'C') { t2 = 1; ir = CODE[pc++]; }
+        case '@': doFetch(0, USER);                  break;
+        case 'A': ir = USER[pc++]; t2 = 0;
+            if (ir == 'C') { t2 = 1; ir = USER[pc++]; }
             if (ir == '@') { doFetch((byte)t2, 0); }
             if (ir == '!') { doStore((byte)t2, 0); }
             break;
         case 'B': printString(" ");                  break;
-        case 'C': ir = CODE[pc++];
-            if (ir == '@') { doFetch(1, BMEM); }
-            if (ir == '!') { doStore(1, BMEM); }
+        case 'C': ir = USER[pc++];
+            if (ir == '@') { doFetch(1, USER); }
+            if (ir == '!') { doStore(1, USER); }
             break;
-        case 'D': ir = CODE[pc++];
-            if (ir == '@') { doFetch(1, CODE); }
-            if (ir == '!') { doStore(1, CODE); }
-            break;
+        case 'D': /* FREE */                         break;
         case 'E': /* FREE */                         break;
         case 'F': T = ~T;                            break;
         case 'G': pc = (addr)pop();                  break;
         case 'H': push(0);
-            t1 = digitToNum(CODE[pc], 0x10, 2);
+            t1 = digitToNum(USER[pc], 0x10, 2);
             while (0 <= t1) {
                 T = (T * 0x10) + t1;
-                t1 = digitToNum(CODE[++pc], 0x10, 2);
+                t1 = digitToNum(USER[++pc], 0x10, 2);
             } break;
         case 'I': doIJK(pc, 1);                      break;
         case 'J': doIJK(pc, 2);                      break;
         case 'K': T *= 1000;                         break;
         case 'L': N = N << T; DROP1;                 break;
-        case 'M': /* FREE */;                        break;
+        case 'M': T--;                               break; // (Minus 1)
         case 'N': printString("\r\n");               break;
         case 'O': T = -T;                            break; // (NEGATE)
-        case 'P': T++;                               break; // (INCREMENT)
-        case 'Q': T--;                               break; // (DECREMENT)
+        case 'P': T++;                               break; // (Plus 1)
+        case 'Q': /* FREE */                         break;
         case 'R': N = N >> T; DROP1;                 break; // (RIGHT-SHIFT)
-        case 'S': t2 = N; t1 = T;                      // (SLASHMOD)
+        case 'S': t2 = N; t1 = T;                           // (SLASHMOD)
             if (t1 == 0) { isError = 1; printString("-divByZero-"); }
             else { N = (t2 / t1); T = (t2 % t1); }
             break;
@@ -422,11 +419,11 @@ addr run(addr pc) {
         case ']': pc = doNext(pc);                   break;       // 93
         case '^': rpush(pc); pc = (addr)pop();       break;       // 94
         case '_': push(T);                                        // 95 (S" variant)
-            while (CODE[pc] && (CODE[pc] != '_')) { MEM[T++] = CODE[pc++]; }
-            ++pc; MEM[T++] = 0;
+            while (USER[pc] && (USER[pc] != '_')) { USER[T++] = USER[pc++]; }
+            ++pc; USER[T++] = 0;
             break;
         case '`': push(HERE);                                // 96 (String C,)
-            while (CODE[pc] && (CODE[pc] != '`')) { CODE[HERE++] = CODE[pc++]; }
+            while (USER[pc] && (USER[pc] != '`')) { USER[HERE++] = USER[pc++]; }
             ++pc; break;
         case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
         case 'g': case 'h': case 'i': case 'j': case 'k': case 'l':
@@ -435,12 +432,11 @@ addr run(addr pc) {
         case 'y': case 'z': ir -= 'a';
             pc = getRegNum(pc-1, &t1);
             if (isBetweenI(t1, 0, NUM_REGS-1)) { 
-                push(MEM[t1]);
-                ir = CODE[pc];
-                //printf("-reg:%c%c:%ld-", CODE[pc-2], CODE[pc-1], T);
-                if (ir == '+') { ++pc; ++MEM[t1]; }
-                if (ir == '-') { ++pc; --MEM[t1]; }
-                if (ir == ':') { DROP1; ++pc; MEM[t1] = pop(); }
+                push(REG[t1]);
+                ir = USER[pc];
+                if (ir == '+') { ++pc; ++REG[t1]; }
+                if (ir == '-') { ++pc; --REG[t1]; }
+                if (ir == ':') { DROP1; ++pc; REG[t1] = pop(); }
             } else {
                 isError = 1;
                 printString("-regOOB-");
@@ -457,13 +453,13 @@ addr run(addr pc) {
 }
 
 void setCodeByte(addr loc, char ch) {
-    if ((0 <= loc) && (loc < SZ_CODE)) { CODE[loc] = ch; }
+    if ((0 <= loc) && (loc < SZ_USER)) { USER[loc] = ch; }
 }
 
 long registerVal(char *reg) {
-    CODE[HERE + 0] = reg[0];
-    CODE[HERE + 1] = reg[1];
-    CODE[HERE + 2] = reg[2];
+    USER[HERE + 0] = reg[0];
+    USER[HERE + 1] = reg[1];
+    USER[HERE + 2] = reg[2];
     long val = 0;
     getRegNum(HERE, &val);
     return val;

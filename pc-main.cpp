@@ -76,7 +76,7 @@ addr strToCode(addr loc, const char *txt, int NT) {
 }
 
 void loop() {
-    char *tib = (char*)&mySys.code[tibOffset];
+    char *tib = (char*)&mySys.user[tibOffset];
     FILE* fp = (input_fp) ? input_fp : stdin;
     if (fp == stdin) { ok(); }
     if (fgets(tib, 128, fp) == tib) {
@@ -112,7 +112,7 @@ void process_arg(char* arg)
 
 sys_t *createSystem() {
     mySys.bmem = memory;
-    mySys.code_sz = CODE_SZ;
+    mySys.user_sz = CODE_SZ;
     mySys.mem_sz = MEM_SZ;
     mySys.num_regs = REGS_NUM;
     mySys.dstack = dstk;

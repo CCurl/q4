@@ -17,9 +17,9 @@ typedef struct {
 typedef struct {
     byte   *bmem;
     long   *mem;
-    byte   *code;
+    byte   *user;
     ulong   here;
-    ulong   code_sz;
+    ulong   user_sz;
     ulong   mem_sz;
     ushort  num_regs;
     ushort  stack_sz;
@@ -31,7 +31,7 @@ typedef struct {
 
 extern sys_t *sys;
 
-#define CODE       sys->code
+#define USER       sys->user
 #define REG        sys->mem
 #define MEM        sys->mem
 #define BMEM       sys->bmem
@@ -41,7 +41,7 @@ extern sys_t *sys;
 #define DSP        sys->dsp
 #define RSP        sys->rsp
 #define LSP        sys->lsp 
-#define SZ_CODE    sys->code_sz
+#define SZ_USER    sys->user_sz
 #define SZ_MEM     sys->mem_sz
 #define SZ_STK     sys->stack_sz
 #define NUM_REGS   sys->num_regs

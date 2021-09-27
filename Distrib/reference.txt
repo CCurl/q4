@@ -9,8 +9,8 @@
 /  (a b--a/b)     division
 K  (T--n)         multiply TOS by 1000
 O  (T--n)         n: -T
-P  (T--n)         n: T+1 (INCREMENT)
-Q  (T--n)         n: T+1 (INCREMENT)
+M  (T--n)         n: T-1 (Minus 1)
+P  (T--n)         n: T+1 (Plus 1)
 S  (a n--q r)     q: a/n, r: a MODULO n (SLASHMOD)
 U  (T--n)         n: the absolute value of T
 
@@ -47,9 +47,6 @@ AC@   (a--n)      Fetch byte n from ABSOLUTE address a
 AC!   (n a--)     Store byte n  to  ABSOLUTE address a
 A@    (a--n)      Fetch long n from ABSOLUTE address a
 A!    (n a--)     Store long n  to  ABSOLUTE address a
-D@    (a--n)      Fetch byte n from CODE address a
-D!    (n a--)     Store byte n  to  CODE address a
-                  NOTE: CODE address [0] is USER address [NUM-REGS*4]
 
 
 *** REGISTERS ***
