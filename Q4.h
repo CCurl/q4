@@ -2,7 +2,6 @@
 
 typedef unsigned char byte;
 #define MAX_REGS (26*26*26)
-#define MAX_CODE (64*1024)
 typedef unsigned long addr;
 typedef unsigned long ulong;
 typedef unsigned short ushort;

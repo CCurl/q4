@@ -10,18 +10,17 @@
 
 typedef unsigned char byte;
 
-#define REGS_NUM   MAX_REGS
-#define CODE_SZ    (32*1024)
-#define REGS_SZ    (REGS_NUM*4)
-#define VARS_SZ    (64*1024)
-#define STK_SZ           31
-#define MEM_SZ     REGS_SZ+CODE_SZ+VARS_SZ
+#define STK_SZ        31
+#define REGS_NUM      MAX_REGS
+#define REGS_SZ       (REGS_NUM*4)
+#define USER_SZ       (96*1024)
+#define MEM_SZ        REGS_SZ+USER_SZ
 
 static byte memory[MEM_SZ];
 static long dstk[STK_SZ + 1];
 static addr rstk[STK_SZ + 1];
 static sys_t mySys;
-static long tibOffset = CODE_SZ - 256;
+static long tibOffset = USER_SZ - 256;
 static byte *tib = NULL;
 
 // These are used only by the PC version
@@ -112,7 +111,7 @@ void process_arg(char* arg)
 
 sys_t *createSystem() {
     mySys.bmem = memory;
-    mySys.user_sz = CODE_SZ;
+    mySys.user_sz = USER_SZ;
     mySys.mem_sz = MEM_SZ;
     mySys.num_regs = REGS_NUM;
     mySys.dstack = dstk;
