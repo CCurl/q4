@@ -208,6 +208,8 @@ char *getRegName(short regNum, char *buf) {
     buf[1] = 'a' + (regNum / 26 % 26);
     buf[2] = 'a' + (regNum % 26);
     buf[3] = 0;
+    if (buf[0] == 'a') { buf[0] = ' '; }
+    if ((buf[0] == ' ') && buf[1] == 'a') { buf[1] = ' '; }
     return buf;
 }
 
