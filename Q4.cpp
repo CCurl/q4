@@ -28,11 +28,10 @@ void vmReset() {
     for (ulong i = 0; i < SZ_MEM; i++) { BMEM[i] = 0; }
     USER[HERE++] = ';';
     REG[ 1] = 10;                        // B (BASE)
-    REG[ 2] = SZ_USER;                   // C
     REG[12] = SZ_MEM;                    // M
     REG[17] = NUM_REGS;                  // R
     REG[18] = (long)sys;                 // S
-    REG[21] = (NUM_REGS * 4)+SZ_USER;    // V
+    REG[20] = SZ_USER;                   // U
 }
 
 void vmInit(sys_t *theSystem) {

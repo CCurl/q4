@@ -51,14 +51,15 @@ A!    (n a--)     Store long n  to  ABSOLUTE address a
 
 *** REGISTERS ***
   NOTES: The registers are stored in beginning of the Q4 USER memory
-  A register all lowercase alpha characters, up to 3 in length: [a .. zzz]
-         The maximun number of registers is 26##** = 17,576 registers.
+  A register is identified by lowercase alpha characters, up to 3 in length: [a .. zzz]
+         The maximum number of registers is 26##** = 17,576 registers.
          Register initial values:
-         - c: Size of CODE area (soft)
+         - b: BASE (10, not currently used)
          - h: HERE **special**
-         - m: Size of USER memory
+         - m: Total memory used for REGISTERS + USER
          - r: Number of registers defined
-         - v: First available address after the CODE area (soft)
+         - s: ABSOLUTE address of the system
+         - u: Size of USER memory
          - All other registers set to 0
 xxx:  (n--)         Set register xxx value to n
 xxx   (--n)         Push value of register xxx
@@ -67,10 +68,10 @@ xxx-  (--n)         Push value of register xxx, then decrement the register by 1
 
 
 *** Quotes ***
-      DEF: Quotes are un-named code entities/routines. Quotes can be nested.
+      NB: a Quote is an un-named code entity/routine. Quotes can be nested within other quotes.
 {   (--n)    Begin the definition of a quote. Skip to the matching '}'.
              n: the address of first char after the '{' on the stack.
-}   (--)     When defining a quote: Ends the definition if the quote. 
+}   (--)     When defining a quote, ends the definition of the quote. 
              When executing, perform a return. (PC: RStack.pop()).
 ^   (T--)    Call quote at address T. (RStack.push(PC), PC: T)
 G   (T--)    GOTO address T. (PC: T)
