@@ -91,15 +91,16 @@ int regDigit(char x) {
     return isBetweenI(x, 'a', 'z') ? x - 'a' : -1;
 }
 
-long getRegNum(int pc, long *prn) {
-    *prn = regDigit(USER[pc]);
-    if (*(prn) < 0) { return pc; }
-    int d = regDigit(USER[++pc]);
-    if (d < 0) { return pc; }
-    *(prn) = (*(prn) * 26) + d;
-    d = regDigit(USER[++pc]);
-    if (d < 0) { return pc; }
-    *(prn) = (*(prn) * 26) + d;
+long getRegNum(int pc, long &prn) {
+    int rd = regDigit(USER[pc]);
+    if (rd < 0) { prn = -1;  return pc; }
+    prn = rd;
+    rd = regDigit(USER[++pc]);
+    if (rd < 0) { return pc; }
+    prn = (prn * 26) + rd;
+    rd = regDigit(USER[++pc]);
+    if (rd < 0) { return pc; }
+    prn = (prn * 26) + rd;
     return pc+1;
 }
 
@@ -405,15 +406,15 @@ addr run(addr pc) {
             else { printString("-l:pc only-"); }
             break;
         case 'Z': printString((char*)&USER[pop()]);  break;
-        case '[': pc = doFor(pc);                    break;       // 91
-        case '\\': DROP1;                            break;       // 92
-        case ']': pc = doNext(pc);                   break;       // 93
-        case '^': rpush(pc); pc = (addr)pop();       break;       // 94
-        case '_': push(T);                                        // 95 (S" variant)
+        case '[': pc = doFor(pc);                    break;    // 91
+        case '\\': DROP1;                            break;    // 92
+        case ']': pc = doNext(pc);                   break;    // 93
+        case '^': rpush(pc); pc = (addr)pop();       break;    // 94
+        case '_': push(T);                                     // 95 (S" variant)
             while (USER[pc] && (USER[pc] != '_')) { USER[T++] = USER[pc++]; }
             ++pc; USER[T++] = 0;
             break;
-        case '`': push(HERE);                                // 96 (String C,)
+        case '`': push(HERE);                                  // 96 (String C,)
             while (USER[pc] && (USER[pc] != '`')) { USER[HERE++] = USER[pc++]; }
             ++pc; break;
         case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
@@ -421,7 +422,7 @@ addr run(addr pc) {
         case 'm': case 'n': case 'o': case 'p': case 'q': case 'r':
         case 's': case 't': case 'u': case 'v': case 'w': case 'x':
         case 'y': case 'z': ir -= 'a';
-            pc = getRegNum(pc-1, &t1);
+            pc = getRegNum(pc-1, t1);
             if (isBetweenI(t1, 0, NUM_REGS-1)) { 
                 push(REG[t1]);
                 ir = USER[pc];
@@ -452,6 +453,6 @@ long registerVal(char *reg) {
     USER[HERE + 1] = reg[1];
     USER[HERE + 2] = reg[2];
     long val = 0;
-    getRegNum(HERE, &val);
+    getRegNum(HERE, val);
     return val;
 }
