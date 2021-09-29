@@ -14,7 +14,6 @@ sys_t *sys;
 #define N        DSTK[DSP-1]
 #define R        RSTK[RSP]
 #define DROP1    pop()
-#define DROP2    pop(); pop()
 #define BASE     REG[1]
 #define HERE     REG[7]
 
