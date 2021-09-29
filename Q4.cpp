@@ -1,4 +1,4 @@
-// Q4 - a stack VM, inspired by Sandor Schneider's STABLE - https://w3group.de/stable.html
+// Q4 - a virtual stack machine/CPU
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,11 +6,8 @@
 #include <stdarg.h>
 #include "Q4.h"
 
-#define RN_SZ    2
-
 byte isBye = 0, isError = 0;
 char buf[100];
-FILE* input_fp = NULL;
 sys_t *sys;
 
 #define T        DSTK[DSP]
@@ -78,7 +75,6 @@ void printStringF(const char* fmt, ...) {
     printString(buf);
 }
 
-#define isBetweenX(n, lo, hi) ((lo <  n) && (n <  hi))
 #define isBetweenI(n, lo, hi) ((lo <= n) && (n <= hi))
 
 int digitToNum(char x, byte base, byte mode) {
@@ -207,8 +203,10 @@ char *getRegName(short regNum, char *buf) {
     buf[1] = 'a' + (regNum / 26 % 26);
     buf[2] = 'a' + (regNum % 26);
     buf[3] = 0;
-    if (buf[0] == 'a') { buf[0] = ' '; }
-    if ((buf[0] == ' ') && buf[1] == 'a') { buf[1] = ' '; }
+    if (buf[0] == 'a') { 
+        buf[0] = ' '; 
+        if (buf[1] == 'a') { buf[1] = ' '; }
+    }
     return buf;
 }
 
@@ -233,30 +231,29 @@ addr doFile(addr pc) {
     int ir = USER[pc++];
     switch (ir) {
 #ifdef __PC__
-    case 'C':
-        if (T) { fclose((FILE*)T); }
+    case 'C': if (T) { fclose((FILE*)T); }
         DROP1;
         break;
     case 'O': {
-        byte* md = BMEM + pop();
-        byte* fn = BMEM + T;
-        T = 0;
-        fopen_s((FILE**)&T, (char *)fn, (char *)md);
-    }
-            break;
+            byte *md = USER + pop();
+            byte *fn = USER + T;
+            T = 0;
+            fopen_s((FILE**)&T, (char *)fn, (char *)md);
+        }
+        break;
     case 'R': if (T) {
-        long n = fread_s(buf, 2, 1, 1, (FILE*)T);
-        T = ((n) ? buf[0] : 0);
-        push(n);
-    }
-            break;
+            long n = fread_s(buf, 2, 1, 1, (FILE*)T);
+            T = ((n) ? buf[0] : 0);
+            push(n);
+        }
+        break;
     case 'W': if (T) {
-        FILE* fh = (FILE*)pop();
-        buf[1] = 0;
-        buf[0] = (byte)pop();
-        fwrite(buf, 1, 1, fh);
-    }
-            break;
+            FILE* fh = (FILE*)pop();
+            buf[1] = 0;
+            buf[0] = (byte)pop();
+            fwrite(buf, 1, 1, fh);
+        }
+        break;
 #endif
     }
     return pc;
@@ -308,11 +305,9 @@ addr doExt(addr pc) {
 
 addr run(addr pc) {
     long t1, t2, t3;
-    byte* bp;
     isError = 0;
     while (!isError && (0 < pc)) {
         byte ir = USER[pc++];
-        //printf("\n-pc:%3ld,ir:%3d(%c),DSP:%d,RSP:%d,T:%ld-", pc-1,ir,ir?ir:'.',DSP,RSP,T);
         switch (ir) {
         case 0: RSP = 0; return -1;
         case ' ': while (USER[pc] == ' ') { pc++; }         // 32
@@ -333,7 +328,8 @@ addr run(addr pc) {
         case ')': pc = doWhile(pc);                 break;  // 41
         case '*': t1 = pop(); T *= t1;              break;  // 42
         case '+': t1 = pop(); T += t1;              break;  // 43
-        case ',': printStringF("%c", (char)pop());  break;  // 44 (EMIT)
+        case ',': buf[0] = (byte)pop(); buf[1] = 0;
+            printString(buf);                       break;  // 44 (EMIT)
         case '-': t1 = pop(); T -= t1;              break;  // 45
         case '.': printStringF("%ld", pop());       break;  // 46
         case '/': t1 = pop();                               // 47
@@ -353,12 +349,12 @@ addr run(addr pc) {
         case ';': if (RSP < 2) { RSP = 0; return pc; }       // 59
                 rpop();  pc = rpop();
                 break;
-        case '<': t1 = pop(); T = T < t1 ? 1 : 0;    break;  // 60
-        case '=': t1 = pop(); T = T == t1 ? 1 : 0;   break;  // 61
-        case '>': t1 = pop(); T = T > t1 ? 1 : 0;    break;  // 62
+        case '<': t1 = pop(); T = (T <  t1) ? 1 : 0; break;  // 60
+        case '=': t1 = pop(); T = (T == t1) ? 1 : 0; break;  // 61
+        case '>': t1 = pop(); T = (T >  t1) ? 1 : 0; break;  // 62
         case '?': t2 = pop(); t1 = pop(); t3 = pop();        // 63
-            if (t3 && t1) { rpush(pc); pc = (addr)t1; } // TRUE case
-            if (!t3 && t2) { rpush(pc); pc = (addr)t2; } // FALSE case
+            if ( t3 && t1) { rpush(pc); pc = (addr)t1; }     // TRUE case
+            if (!t3 && t2) { rpush(pc); pc = (addr)t2; }     // FALSE case
             break;
         case '@': doFetch(0, USER);                  break;
         case 'A': ir = USER[pc++]; t2 = 0;
@@ -396,11 +392,11 @@ addr run(addr pc) {
             else { N = (t2 / t1); T = (t2 % t1); }
             break;
         case 'T': push(millis());                    break;
-        case 'U': if (T < 0) { T = -T; }             break; // (ABS)
+        case 'U': if (T < 0) { T = -T; }             break;
         case 'V': /* FREE */                         break;
         case 'W': delay(pop());                      break;
         case 'X': pc = doExt(pc);                    break;
-        case 'Y': t1 = pop();                          // LOAD
+        case 'Y': t1 = pop();                               // LOAD
             if (__PC__) {
                 if (input_fp) { fclose(input_fp); }
                 sprintf_s(buf, sizeof(buf), "block.%03ld", t1);
@@ -408,11 +404,7 @@ addr run(addr pc) {
             }
             else { printString("-l:pc only-"); }
             break;
-        case 'Z':  if ((0 <= T) && ((ulong)T < SZ_MEM)) {
-            bp = &BMEM[pop()];
-            printString((char*)bp);
-        }
-                break;
+        case 'Z': printString((char*)&USER[pop()]);  break;
         case '[': pc = doFor(pc);                    break;       // 91
         case '\\': DROP1;                            break;       // 92
         case ']': pc = doNext(pc);                   break;       // 93

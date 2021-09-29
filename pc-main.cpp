@@ -22,6 +22,7 @@ static addr rstk[STK_SZ + 1];
 static sys_t mySys;
 static long tibOffset = USER_SZ - 256;
 static byte *tib = NULL;
+FILE* input_fp = NULL;
 
 // These are used only by the PC version
 static HANDLE hStdOut = 0;
