@@ -10,7 +10,7 @@
 
 typedef unsigned char byte;
 
-#define STK_SZ        31
+#define STK_SZ        127
 #define REGS_NUM      MAX_REGS
 #define REGS_SZ       (REGS_NUM*4)
 #define USER_SZ       (96*1024)
