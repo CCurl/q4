@@ -36,10 +36,10 @@ void vmInit(sys_t *theSystem) {
 }
 
 void push(long v) { if (DSP < SZ_STK) { DSTK[++DSP] = v; } }
-long pop() { return (DSP > 0) ? DSTK[DSP--] : 0; }
+long pop() { return (0 < DSP) ? DSTK[DSP--] : 0; }
 
 void rpush(addr v) { if (RSP < SZ_STK) { RSTK[++RSP] = v; } }
-addr rpop() { return (RSP > 0) ? RSTK[RSP--] : 0; }
+addr rpop() { return (0 < RSP) ? RSTK[RSP--] : 0; }
 
 void doStore(byte isByte, byte *base) {
     long t = pop(), n = pop();
@@ -346,8 +346,9 @@ addr run(addr pc) {
             }
             break;
         case ':': /* FREE */                         break;  // 58
-        case ';': if (RSP < 2) { RSP = 0; return pc; }       // 59
-                rpop();  pc = rpop();
+        case ';': pc = rpop();                               // 59
+                if ((0 < pc) && (USER[pc-1] == '?')) { pc = rpop(); }
+                if (pc == 0) { RSP = 0; return pc; }
                 break;
         case '<': t1 = pop(); T = (T <  t1) ? 1 : 0; break;  // 60
         case '=': t1 = pop(); T = (T == t1) ? 1 : 0; break;  // 61
