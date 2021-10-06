@@ -32,6 +32,10 @@ Q4 examples:
     Q4 code:             ff tt[I.B]
     Forth equivalent:    F T FOR I . NEXT
     C equivalent:        for (int i = F; i <= T; i)) { printf("%d ", i); }
+
+; A loop using GOTO:
+    h lpg: `#.B 1- # 0{\;;}? lpg G;`\
+    100 lpg^
     
 ; One way to copy N bytes from A to B
     dd: ss: 1[ss+ C@ dd+ C!]   ; (N F T--) copy bytes
