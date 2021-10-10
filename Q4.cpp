@@ -86,9 +86,7 @@ int digitToNum(char x, byte base, byte mode) {
     return n;
 }
 
-int regDigit(char x) {
-    return isBetweenI(x, 'a', 'z') ? x - 'a' : -1;
-}
+inline int regDigit(char x) { return isBetweenI(x, 'a', 'z') ? x - 'a' : -1; }
 
 long getRegNum(int pc, long &prn) {
     int rd = regDigit(USER[pc]);
@@ -346,8 +344,8 @@ addr run(addr pc) {
             }
             break;
         case ':': /* FREE */                         break;  // 58
-        case ';': if (USER[pc] == ';') { rpop(); }           // 59
-                pc = rpop();
+        case ';': pc = rpop();                               // 59
+                if ((0 < pc) && (USER[pc-1] == '?')) { pc = rpop(); }
                 if (pc == 0) { RSP = 0; return pc; }
                 break;
         case '<': t1 = pop(); T = (T <  t1) ? 1 : 0; break;  // 60
@@ -366,7 +364,18 @@ addr run(addr pc) {
             if (ir == '!') { doStore(1, USER); }
             break;
         case 'D': /* FREE */                         break;
-        case 'E': /* FREE */                         break;
+        case 'E': if (0 < LSP) {                             // EXIT loop
+                LOOP_ENTRY_T* x = &LSTK[LSP-1];
+                if (x->end) {
+                    pc = x->end;
+                    LSP--;
+                    if ((0 < RSP) && (USER[R-1] == '?')) { rpop(); }
+                } else {
+                    printString("-NoLoopEnd-");
+                    isError = 1;
+                }
+            }
+            break;
         case 'F': T = ~T;                            break;
         case 'G': pc = (addr)pop();                  break;
         case 'H': push(0);
@@ -379,10 +388,10 @@ addr run(addr pc) {
         case 'J': doIJK(pc, 2);                      break;
         case 'K': T *= 1000;                         break;
         case 'L': N = N << T; DROP1;                 break;
-        case 'M': T--;                               break; // (Minus 1)
+        case 'M': /* FREE */                         break; // (Minus 1)
         case 'N': printString("\r\n");               break;
         case 'O': T = -T;                            break; // (NEGATE)
-        case 'P': T++;                               break; // (Plus 1)
+        case 'P': /* FREE */                         break; // (Plus 1)
         case 'Q': /* FREE */                         break;
         case 'R': N = N >> T; DROP1;                 break; // (RIGHT-SHIFT)
         case 'S': t2 = N; t1 = T;                           // (SLASHMOD)

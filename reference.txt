@@ -1,6 +1,6 @@
-************************************
-*     Q4 Reference                 *
-************************************
+*************************************************************
+*     The Q4 Virtual CPU Machine Code Reference             *
+*************************************************************
 
 *** ARITHMETIC ***
 +  (a b--a+b)     addition
@@ -72,9 +72,16 @@ xxx-  (--n)         Push value of register xxx, then decrement the register by 1
 {   (--n)    Begin the definition of a quote. Skip to the matching '}'.
              n: the address of first char after the '{' on the stack.
 }   (--)     When defining a quote, ends the definition of the quote. 
-             When executing, perform a return. (PC: RStack.pop()).
-^   (T--)    Call quote at address T. (RStack.push(PC), PC: T)
-G   (T--)    GOTO address T. (PC: T)
+             When executing, perform a return. (PC=rpop()).
+
+
+*** Call/Goto/Return ***
+^   (T--)    Call address T. (rpush(PC), PC=T)
+G   (T--)    GOTO address T. (PC=T)
+;   (--)     Return (PC=rpop())
+;;  (--)     Double return (rpop(), PC=rpop())
+      Note: this can be used to exit a routine from inside a '?' clause
+            eg - num 256 > {;;}0? .;
 
 
 *** INPUT/OUTPUT ***
@@ -97,16 +104,17 @@ HX    (--N)       Scan HEX number X until non-HEX digit (not case-sensitive, H3D
 
 
 *** CONDITIONS/FLOW CONTROL ***
-<   (a b--f)      f: (a < b) ? 1 : 0;
-=   (a b--f)      f: (a = b) ? 1 : 0;
->   (a b--f)      f: (a > b) ? 1 : 0;
-~   (x--f)        f: (x = 0) ? 1 : 0;
-?   (F Q1 Q2--)   If (F != 0), execute Q1, else execute Q2 if Q2 is not 0.
+<   (a b--f)      f: (a < b) ? 1 : 0
+=   (a b--f)      f: (a = b) ? 1 : 0
+>   (a b--f)      f: (a > b) ? 1 : 0
+~   (x--f)        f: (x = 0) ? 1 : 0
+?   (F A1 A2--)   If (F != 0), call A1 (if not 0), else call A2 (if not 0).
 
 
 *** LOOPING ***
-[   (F T --)      FOR: start a For/Next loop. if (T < F), swap F and T 
-]   ( -- )        NEXT: increment index (xI) and loop if (xI < T)
+[   (F T--)      FOR: start a For/Next loop. if (T < F), swap F and T 
+]   (--)         NEXT: increment index (xI) and loop if (xI < T)
+E   (--)         Exit FOR loop. This only works after going through the loop at least once.
           NOTE: For loops CAN be nested
 I   (-- n)        Index: push the index of the current FOR loop
 J   (-- n)        Index: push the index of the parent FOR loop
