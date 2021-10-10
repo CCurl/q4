@@ -10,7 +10,7 @@
 
 typedef unsigned char byte;
 
-#define STK_SZ        127
+#define STK_SZ        63
 #define REGS_NUM      MAX_REGS
 #define REGS_SZ       (REGS_NUM*4)
 #define USER_SZ       (96*1024)
@@ -25,7 +25,6 @@ static byte *tib = NULL;
 FILE* input_fp = NULL;
 
 // These are used only by the PC version
-static HANDLE hStdOut = 0;
 static char input_fn[32];
 static char runMode = 'i';
 
@@ -40,7 +39,7 @@ void delay(DWORD ms) { Sleep(ms); }
 
 void printString(const char* str) {
     DWORD n = 0, l = (DWORD)strlen(str);
-    if (l) { WriteConsoleA(hStdOut, str, l, &n, 0); }
+    if (l) { fputs(str, stdout); }
 }
 
 int getChar() {
@@ -122,10 +121,6 @@ sys_t *createSystem() {
 }
 
 int main(int argc, char** argv) {
-    hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD m; GetConsoleMode(hStdOut, &m);
-    SetConsoleMode(hStdOut, (m | ENABLE_VIRTUAL_TERMINAL_PROCESSING));
-
     vmInit(createSystem());
 
     input_fn[0] = 0;

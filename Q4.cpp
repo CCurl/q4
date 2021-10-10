@@ -304,7 +304,7 @@ addr doExt(addr pc) {
 }
 
 addr run(addr pc) {
-    long t1, t2, t3;
+    long t1, t2;
     isError = 0;
     while (!isError && (0 < pc)) {
         byte ir = USER[pc++];
@@ -346,17 +346,14 @@ addr run(addr pc) {
             }
             break;
         case ':': /* FREE */                         break;  // 58
-        case ';': pc = rpop();                               // 59
-                if ((0 < pc) && (USER[pc-1] == '?')) { pc = rpop(); }
+        case ';': if (USER[pc] == ';') { rpop(); }           // 59
+                pc = rpop();
                 if (pc == 0) { RSP = 0; return pc; }
                 break;
         case '<': t1 = pop(); T = (T <  t1) ? 1 : 0; break;  // 60
         case '=': t1 = pop(); T = (T == t1) ? 1 : 0; break;  // 61
         case '>': t1 = pop(); T = (T >  t1) ? 1 : 0; break;  // 62
-        case '?': t2 = pop(); t1 = pop(); t3 = pop();        // 63
-            if ( t3 && t1) { rpush(pc); pc = (addr)t1; }     // TRUE case
-            if (!t3 && t2) { rpush(pc); pc = (addr)t2; }     // FALSE case
-            break;
+        case '?': /* FREE */                         break;  // 63
         case '@': doFetch(0, USER);                  break;
         case 'A': ir = USER[pc++]; t2 = 0;
             if (ir == 'C') { t2 = 1; ir = USER[pc++]; }
@@ -410,12 +407,9 @@ addr run(addr pc) {
         case '\\': DROP1;                            break;    // 92
         case ']': pc = doNext(pc);                   break;    // 93
         case '^': rpush(pc); pc = (addr)pop();       break;    // 94
-        case '_': push(T);                                     // 95 (S" variant)
-            while (USER[pc] && (USER[pc] != '_')) { USER[T++] = USER[pc++]; }
-            ++pc; USER[T++] = 0;
-            break;
-        case '`': push(HERE);                                  // 96 (String C,)
-            while (USER[pc] && (USER[pc] != '`')) { USER[HERE++] = USER[pc++]; }
+        case '_': /* FALL THROUGH */                           // 95
+        case '`': while (USER[pc] && (USER[pc] != ir))         // 96
+            { USER[T++] = USER[pc++]; }
             ++pc; break;
         case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
         case 'g': case 'h': case 'i': case 'j': case 'k': case 'l':
@@ -433,11 +427,12 @@ addr run(addr pc) {
                 isError = 1;
                 printString("-regOOB-");
             } break;
-        case '{': pc = doDefineQuote(pc);            break;    // 123
+        case '{': if (pop()) { break; }                        // 123
+            while (USER[pc++]) { 
+                if (USER[pc - 1] == '}') break; 
+            } break;
         case '|': t1 = pop(); T |= t1;               break;    // 124
-        case '}': if (0 < RSP) { pc = rpop(); }                // 125
-                else { RSP = 0; return pc; }
-            break;
+        case '}': /* FREE */                         break;    // 125
         case '~': T = (T) ? 0 : 1;                   break;    // 126 (Logical NOT)
         }
     }
