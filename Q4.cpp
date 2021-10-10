@@ -388,10 +388,10 @@ addr run(addr pc) {
         case 'J': doIJK(pc, 2);                      break;
         case 'K': T *= 1000;                         break;
         case 'L': N = N << T; DROP1;                 break;
-        case 'M': /* FREE */                         break; // (Minus 1)
+        case 'M': --T;                               break; // (Minus 1)
         case 'N': printString("\r\n");               break;
         case 'O': T = -T;                            break; // (NEGATE)
-        case 'P': /* FREE */                         break; // (Plus 1)
+        case 'P': ++T;                               break; // (Plus 1)
         case 'Q': /* FREE */                         break;
         case 'R': N = N >> T; DROP1;                 break; // (RIGHT-SHIFT)
         case 'S': t2 = N; t1 = T;                           // (SLASHMOD)

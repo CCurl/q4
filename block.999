@@ -14,3 +14,24 @@ N 3654 #_`Testing 1 2 3`_ 0$C!Z
 N 3654 #`_2nd_string_`    0$C!Z
 
 NN "Code:" N 50("-"M) N yyy^ N "Stack: " XIS N XIR
+
+; "test of the comment"
+
+N"Primes"
+
+; n:              Register for count of primes
+; p:   (n q--f)   Addr of 'Is Prime Number?' routine
+; np:  (n1--n2)   Addr of 'Number of Primes' routine
+; bm:  (n--)      Addr of 'Benchmark' routine
+
+h# p:   _%%S~{\\~;}%<{\;}PPpG;_                                h:
+h# np:  _4n: 11 1(\ #3 p^ {n+\} PP %% >)\\ n;_                 h:
+h# bm:  _N"# primes in " #. ": " T$ np^ . T$- " (" . " ms)";_  h:
+
+100 bm^
+1000 bm^
+10000 bm^
+100000 bm^
+1000000 bm^
+5000000 bm^
+10000000 bm^
