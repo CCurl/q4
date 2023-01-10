@@ -15,7 +15,7 @@ Q4 is the result of my work towards those goals.
 ## Building Q4
 
 - On Windows, I use Microsoft's Visual Studio (Community edition). 
-- On Linus, I use gcc (or clang). 
+- On Linux, I use gcc (or clang). 
 - For Development boards, I use the Arduino IDE. 
 - I do not have an Apple, so I have not tried to compile Q4 in that environment.
 - However, being a simple and minimaL C program, it should to port Q4 to other environments.
