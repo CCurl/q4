@@ -1,13 +1,14 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-#ifdef _DEBUG
-#define LM 100
-#else
-#define LM 400
-#endif
+typedef union {
+    char c[4];
+    long l;
+} uu_t;
 
 #define NEXT     goto next
 #define CL(n)    code[n].l
@@ -32,10 +33,7 @@
 char u, *pc;
 long stk[32], rstk[32], lstk[30], reg[256], sp, rsp, lsp, t, here, isErr;
 long locs[100], lb, t1, t2, t3, *pl;
-typedef union {
-    char c[4];
-    long l;
-} uu_t;
+FILE* input_fp = 0;
 uu_t code[10000];
 
 int gl(int n, long l, char reg) {
@@ -138,24 +136,23 @@ void compile(char *line) {
 void loop() {
     int xx = here;
     char buf[256];
-    printf("\nq4: ");
-    gets_s(buf, sizeof(buf));
+    if (input_fp != stdin) {
+        if (fgets(buf, sizeof(buf), input_fp) != buf) {
+            fclose(input_fp);
+            input_fp = stdin;
+        }
+    }
+    if (input_fp == stdin) {
+        printf("\nq4: ");
+        fgets(buf, sizeof(buf), input_fp);
+    } else { printf("%s", buf); }
     compile(buf);
     if (!isErr) { run(xx); }
 }
 
-void test() {
-    char buf[256];
-    here = 0;
-    sprintf_s(buf, sizeof(buf), "5 0 [ %d000000 0 tS [ iA iB +CAB ] tE -EES .E ]", LM);
-    compile(buf);
-    run(0);
-    here = 0;
-}
-
 int main() {
     sp = rsp = lsp = lb = 0;
-    test();
+    input_fp = fopen("src.q4", "rb");
     here = 0;
     while (1) { loop(); }
 }
