@@ -20,15 +20,11 @@ Q4 is the result of my work towards those goals.
 - I do not have an Apple, so I have not tried to compile Q4 in that environment.
 - However, being a simple and minimaL C program, it should to port Q4 to other environments.
 
-## -------------------------------------------------------------
 ## -  Q4 Reference
-## -------------------------------------------------------------
 ```
 (todo)
 ```
-## -------------------------------------------------------------
 ## - Examples
-## -------------------------------------------------------------
 ```
 (todo)
 ```
