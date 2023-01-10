@@ -1,462 +1,254 @@
-// Q4 - a virtual stack machine/CPU
-
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
-#include "Q4.h"
+#include <time.h>
 
-byte isBye = 0, isError = 0;
-char buf[100];
-sys_t *sys;
-
-#define T        DSTK[DSP]
-#define N        DSTK[DSP-1]
-#define R        RSTK[RSP]
-#define DROP1    pop()
-#define BASE     REG[1]
-#define HERE     REG[7]
-
-void vmReset() {
-    DSP = RSP = LSP = 0;
-    sys->mem = (long*)sys->bmem;
-    sys->user = &BMEM[NUM_REGS*4];
-    for (ulong i = 0; i < SZ_MEM; i++) { BMEM[i] = 0; }
-    USER[HERE++] = ';';
-    REG[ 1] = 10;                        // B (BASE)
-    REG[12] = SZ_MEM;                    // M
-    REG[17] = NUM_REGS;                  // R
-    REG[18] = (long)sys;                 // S
-    REG[20] = SZ_USER;                   // U
-}
-
-void vmInit(sys_t *theSystem) {
-    sys = theSystem;
-    vmReset();
-}
-
-void push(long v) { if (DSP < SZ_STK) { DSTK[++DSP] = v; } }
-long pop() { return (0 < DSP) ? DSTK[DSP--] : 0; }
-
-void rpush(addr v) { if (RSP < SZ_STK) { RSTK[++RSP] = v; } }
-addr rpop() { return (0 < RSP) ? RSTK[RSP--] : 0; }
-
-void doStore(byte isByte, byte *base) {
-    long t = pop(), n = pop();
-    if (isByte) { base[t] = (n & 0xff); }
-    else {
-        if (__PC__ || ((t%4) == 0)) { *(long *)&base[t] = n; }
-        else {
-            base[t++] = ((n) & 0xff);
-            base[t++] = ((n >> 8) & 0xff);
-            base[t++] = ((n >> 16) & 0xff);
-            base[t++] = ((n >> 24) & 0xff);
-        }
-    }
-}
-
-void doFetch(byte isByte, byte * base) {
-    if (isByte) { T = base[T]; }
-    else {
-        long t = T;
-        T  = (base[t++]);
-        T |= (base[t++] <<  8);
-        T |= (base[t++] << 16);
-        T |= (base[t++] << 24);
-    }
-}
-
-void printStringF(const char* fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
-    printString(buf);
-}
-
-#define isBetweenI(n, lo, hi) ((lo <= n) && (n <= hi))
-
-int digitToNum(char x, byte base, byte mode) {
-    // mode: 1 => upper, 2 => either, 3 => lower
-    int n = -1;
-    if (isBetweenI(x, '0', '9')) { n = x - '0'; }
-    if (isBetweenI(x, 'A', 'Z') && (mode <= 2)) { n = x - 'A' + 10; }
-    if (isBetweenI(x, 'a', 'z') && (2 <= mode)) { n = x - 'a' + 10; }
-    if (base <= n) { n = -1; }
-    return n;
-}
-
-inline int regDigit(char x) { return isBetweenI(x, 'a', 'z') ? x - 'a' : -1; }
-
-long getRegNum(int pc, long &prn) {
-    int rd = regDigit(USER[pc]);
-    if (rd < 0) { prn = -1;  return pc; }
-    prn = rd;
-    rd = regDigit(USER[++pc]);
-    if (rd < 0) { return pc; }
-    prn = (prn * 26) + rd;
-    rd = regDigit(USER[++pc]);
-    if (rd < 0) { return pc; }
-    prn = (prn * 26) + rd;
-    return pc+1;
-}
-
-addr doDefineQuote(addr pc) {
-    int depth = 1;
-    push(pc);
-    while ((pc < SZ_USER) && USER[pc]) {
-        char c = USER[pc++];
-        if (c == '{') { ++depth; }
-        if (c == '}') {
-            --depth;
-            if (depth == 0) { return pc; }
-        }
-    }
-    isError = 1;
-    printString("-noQtEnd-");
-    return pc;
-}
-
-addr doBegin(addr pc) {
-    rpush(pc);
-    if (T == 0) {
-        while ((pc < SZ_USER) && (USER[pc] != ')')) { pc++; }
-    }
-    return pc;
-}
-
-addr doWhile(addr pc) {
-    if (T) { pc = R; }
-    else { DROP1;  rpop(); }
-    return pc;
-}
-
-addr doFor(addr pc) {
-    if (LSP < 4) {
-        LOOP_ENTRY_T* x = &LSTK[LSP];
-        LSP++;
-        x->start = pc;
-        x->to = pop();
-        x->from = pop();
-        x->end = 0;
-        if (x->to < x->from) {
-            push(x->to);
-            x->to = x->from;
-            x->from = pop();
-        }
-    }
-    return pc;
-}
-
-addr doNext(addr pc) {
-    if (LSP < 1) { LSP = 0; }
-    else {
-        LOOP_ENTRY_T* x = &LSTK[LSP - 1];
-        ++x->from;
-        x->end = pc;
-        if (x->from <= x->to) { pc = x->start; }
-        else { LSP--; }
-    }
-    return pc;
-}
-
-addr doIJK(addr pc, int mode) {
-    push(0);
-    if ((mode == 1) && (0 < LSP)) { T = LSTK[LSP-1].from; }
-    if ((mode == 2) && (0 < LSP)) { T = LSTK[LSP-2].from; }
-    if ((mode == 3) && (0 < LSP)) { T = LSTK[LSP-3].from; }
-    return pc;
-}
-
-void dumpCode() {
-    printStringF("\r\nUSER: size: %d bytes, HERE=%d", SZ_USER, HERE);
-    if (HERE == 0) { printString("\r\n(no code defined)"); return; }
-    addr x = HERE;
-    int ti = 0, npl = 20;
-    char txt[32];
-    for (long i = 0; i < HERE; i++) {
-        if ((i % npl) == 0) {
-            if (ti) { txt[ti] = 0;  printStringF(" ; %s", txt); ti = 0; }
-            printStringF("\n\r%05d: ", i);
-        }
-        txt[ti++] = (USER[i] < 32) ? '.' : USER[i];
-        printStringF(" %3d", USER[i]);
-    }
-    while (x % npl) {
-        printString("    ");
-        x++;
-    }
-    if (ti) { txt[ti] = 0;  printStringF(" ; %s", txt); }
-}
-
-void dumpStack(int hdr) {
-    if (hdr) { printStringF("\r\nSTACK: size: %d ", SZ_STK); }
-    printString("(");
-    for (int i = 1; i <= DSP; i++) { printStringF("%s%ld", (i > 1 ? " " : ""), DSTK[i]); }
-    printString(")");
-}
-
-char *getRegName(short regNum, char *buf) {
-    buf[0] = 'a' + (regNum / (26*26));
-    buf[1] = 'a' + (regNum / 26 % 26);
-    buf[2] = 'a' + (regNum % 26);
-    buf[3] = 0;
-    if (buf[0] == 'a') { 
-        buf[0] = ' '; 
-        if (buf[1] == 'a') { buf[1] = ' '; }
-    }
-    return buf;
-}
-
-void dumpRegs() {
-    printStringF("\r\nREGISTERS: %d available", NUM_REGS);
-    int n = 0;
-    char buf[8];
-    for (int i = 0; i < NUM_REGS; i++) {
-        if (REG[i] == 0) { continue; }
-        if (((n++) % 5) == 0) { printString("\r\n"); }
-        printStringF("%s: %-12ld  ", getRegName(i, buf), REG[i]);
-    }
-}
-
-void dumpAll() {
-    dumpStack(1);   printString("\r\n");
-    dumpRegs();     printString("\r\n");
-    dumpCode();     printString("\r\n");
-}
-
-addr doFile(addr pc) {
-    int ir = USER[pc++];
-    switch (ir) {
-#ifdef __PC__
-    case 'C': if (T) { fclose((FILE*)T); }
-        DROP1;
-        break;
-    case 'O': {
-            byte *md = USER + pop();
-            byte *fn = USER + T;
-            T = 0;
-            fopen_s((FILE**)&T, (char *)fn, (char *)md);
-        }
-        break;
-    case 'R': if (T) {
-            long n = fread_s(buf, 2, 1, 1, (FILE*)T);
-            T = ((n) ? buf[0] : 0);
-            push(n);
-        }
-        break;
-    case 'W': if (T) {
-            FILE* fh = (FILE*)pop();
-            buf[1] = 0;
-            buf[0] = (byte)pop();
-            fwrite(buf, 1, 1, fh);
-        }
-        break;
+#ifdef _DEBUG
+#define LM 100
+#else
+#define LM 300
 #endif
+
+#define NEXT     goto next
+#define CL(n)    code[n].l
+#define CC(n,x)  code[n].c[x]
+#define PS(x)    stk[++sp]=(x)
+#define PP       stk[sp--]
+#define TOS      stk[sp]
+#define NOS      stk[sp-1]
+#define RPS(x)   rstk[++rsp]=(x)
+#define RPP      rstk[rsp--]
+#define R0       rstk[rsp]
+#define R1       rstk[rsp-1]
+#define R2       rstk[rsp-2]
+#define D1       sp--
+#define D2       sp-=2
+#define L0       lstk[lsp]
+#define L1       lstk[lsp-1]
+#define L2       lstk[lsp-2]
+#define L3       lstk[lsp-3]
+#define BTW(a,b,c) ((b<=a)&&(a<=c))
+
+char u, *pc;
+long stk[32], rstk[32], lstk[30], reg[256], sp, rsp, lsp, t;
+long locs[100], lb, t1, t2, t3, *pl;
+typedef union {
+    char c[4];
+    long l;
+} uu_t;
+uu_t code[10000];
+
+void run(const char *x) {
+    pc = (char *)x;
+    printf("(exec): %s\n", x);
+    u = '?';
+next:
+
+    switch(*(pc++)) {
+    case 0: return;
+    case ' ': NEXT;
+    case '!': printf("%c",u); NEXT;
+    case '"': printf("%c",u); NEXT;
+    case '#': t=TOS; PS(t); NEXT;
+    case '$': t=TOS; TOS=NOS; NOS=t; NEXT;
+    case '%': t=NOS; PS(t); NEXT;
+    case '&': printf("%c",u); NEXT;
+    case '\'': D1; NEXT;
+    case '(': if (PP==0) { while (*(pc++)!=')') {} } NEXT;
+    case ')': NEXT;
+    case '*': NOS*=TOS; D1; NEXT;
+    case '+': if (*(pc) == '+') { ++TOS; ++pc; }
+            else { NOS += TOS; D1; }
+            NEXT;
+    case ',': printf("%c",(char)PP); NEXT;
+    case '-': if (*(pc) == '-') { --TOS; ++pc; }
+            else { NOS -= TOS; D1; }
+            NEXT;
+    case '.': printf("%ld",PP); NEXT;
+    case '/': NOS/=TOS; D1; NEXT;
+    case '0': case '1': case '2': case '3': 
+    case '4': case '5': case '6': case '7': 
+    case '8': case '9': PS(*(pc-1)-'0');
+        while (BTW(*pc,'0','9')) { TOS=(TOS*10)+(*(pc++)-'0'); }
+        NEXT;
+    case ':': printf("%c",u); NEXT;
+    case ';': printf("%c",u); NEXT;
+    case '<': NOS=(NOS<TOS)?-1:0;  D1; NEXT;
+    case '=': NOS=(NOS==TOS)?-1:0; D1; NEXT;
+    case '>': NOS=(NOS>TOS)?-1:0;  D1; NEXT;
+    case '?': printf("%c",u); NEXT;
+    case '@': printf("%c",u); NEXT;
+    case 'A': printf("%c",u); NEXT;
+    case 'B': printf(" "); NEXT;
+    case 'C': printf("%c",u); NEXT;
+    case 'D': printf("%c",u); NEXT;
+    case 'E': printf("%c",u); NEXT;
+    case 'F': printf("%c",u); NEXT;
+    case 'G': printf("%c",u); NEXT;
+    case 'H': printf("%c",u); NEXT;
+    case 'I': PS(L0); NEXT;
+    case 'J': PS(L3); NEXT;
+    case 'K': printf("%c",u); NEXT;
+    case 'L': t1=*(pc++); t2=*(pc++); t3=*(pc++);
+        if (++reg[t1] < reg[t2]) pc = (char*)reg[t3];
+        NEXT;
+    case 'M': printf("%c",u); NEXT;
+    case 'N': printf("%c",10); NEXT;
+    case 'O': printf("%c",u); NEXT;
+    case 'P': printf("%c",u); NEXT;
+    case 'Q': exit(0); NEXT;
+    case 'R': printf("%c",u); NEXT;
+    case 'S': printf("%c",u); NEXT;
+    case 'T': PS(clock()); NEXT;
+    case 'U': printf("%c",u); NEXT;
+    case 'V': printf("%c",u); NEXT;
+    case 'W': printf("%c",u); NEXT;
+    case 'X': printf("%c",u); NEXT;
+    case 'Y': printf("%c",u); NEXT;
+    case 'Z': printf("%c",u); NEXT;
+    case '[': lsp+=3; L0=PP; L1=PP; L2=(long)pc; NEXT;
+    case '\\': if (0<sp) sp--; NEXT;
+    case ']': if (++L0<L1) { pc=(char *)L2; }
+        else { lsp-=3; } NEXT;
+    case '^': printf("%c",u); NEXT;
+    case '_': TOS=-TOS; NEXT;
+    case '`': printf("%c",u); NEXT;
+    case 'a': printf("%c",u); NEXT;
+    case 'b': printf(" "); NEXT;
+    case 'c': printf("%c",u); NEXT;
+    case 'd': --reg[*(pc++)]; NEXT;
+    case 'e': printf("%c",u); NEXT;
+    case 'f': printf("%c",u); NEXT;
+    case 'g': printf("%c",u); NEXT;
+    case 'h': PS(0); while (1) {
+            t=BTW(*pc,'0','9') ? *pc-'0' : -1;
+            if ((t<0) && BTW(*pc,'A','F')) { t=*pc-'A'+10; }
+            if (t<0) { break; }
+            TOS=(TOS*16)+t; ++pc;
+        } NEXT;
+    case 'i': ++reg[*(pc++)]; NEXT;
+    case 'j': printf("%c",u); NEXT; 
+    case 'k': printf("%c",u); NEXT;
+    case 'l': if (*pc=='+') { lb+=(lb<90)?10:0; }
+        else if (*pc=='-') { lb=(0<lb)?10:0; }
+            ++pc; NEXT;
+    case 'm': reg[pc[0]] = reg[pc[1]]; pc += 2; NEXT;
+    case 'n': printf("%c",u); NEXT;
+    case 'o': printf("%c",u); NEXT;
+    case 'p': printf("%c",u); NEXT;
+    case 'q': printf("%c",u); NEXT;
+    case 'r': PS(reg[*(pc++)]); NEXT;
+    case 's': reg[*(pc++)] = PP; NEXT;
+    case 't': printf("%c",u); NEXT;
+    case 'u': printf("%c",u); NEXT;
+    case 'v': printf("%c",u); NEXT;
+    case 'w': printf("%c",u); NEXT;
+    case 'x': printf("%c",u); NEXT;
+    case 'y': printf("%c",u); NEXT;
+    case 'z': printf("%c",u); NEXT;
+    case '{': lsp+=3; L2=(long)pc; NEXT;
+    case '|': printf("%c",u); NEXT;
+    case '}': if (PP) { pc=(char*)L2; } else { lsp -=3; } NEXT;
+    case '~': printf("%c",u); NEXT;
+    default: printf("%c",*(pc-1)); NEXT;
     }
-    return pc;
 }
 
-addr doPin(addr pc) {
-    int ir = USER[pc++];
-    long pin = pop(), val = 0;
-    switch (ir) {
-    case 'I': pinMode(pin, INPUT); break;
-    case 'U': pinMode(pin, INPUT_PULLUP); break;
-    case 'O': pinMode(pin, OUTPUT); break;
-    case 'R': ir = USER[pc++];
-        if (ir == 'D') { push(digitalRead(pin)); }
-        if (ir == 'A') { push(analogRead(pin)); }
-        break;
-    case 'W': ir = USER[pc++]; val = pop();
-        if (ir == 'D') { digitalWrite(pin, val); }
-        if (ir == 'A') { analogWrite(pin, val); }
-        break;
+int gl(int n, long l, char reg) {
+    CC(n, 0) = 'l';
+    CC(n, 1) = reg;
+    CL(n+1) = l;
+    return n+2;
+}
+
+int gc(int n, const char *str) {
+    CL(n) = 0;
+    if (0 < strlen(str)) CC(n, 0) = str[0];
+    if (1 < strlen(str)) CC(n, 1) = str[1];
+    if (2 < strlen(str)) CC(n, 2) = str[2];
+    if (3 < strlen(str)) CC(n, 3) = str[3];
+    return n + 1;
+}
+
+int gs(int n, const char *str) {
+    int i = 0;
+    while (*str) {
+        char c = *(str++);
+        if (c == ' ') { ++n; i = 0; continue; }
+        if (i < 4) { CC(n, i++) = c; }
     }
-    return pc;
+    return n + 1;
 }
 
-addr doExt(addr pc) {
-    byte ir = USER[pc++];
-    switch (ir) {
-    case 'F': pc = doFile(pc);          break;
-    case 'I': ir = USER[pc++];
-        if (ir == 'A') { dumpAll(); }
-        if (ir == 'C') { dumpCode(); }
-        if (ir == 'R') { dumpRegs(); }
-        if (ir == 'S') { dumpStack(0); }
-        break;
-    case 'K': ir = USER[pc++];
-        if (ir == 'Y') { push(getChar()); }
-        if (ir == '?') { push(charAvailable()); }
-        break;
-    case 'O': ir = USER[pc++];
-        if (ir == 'R') { N ^= T; DROP1; }
-        break;
-    case 'P': pc = doPin(pc);           break;
-    case 'R': vmReset();                break;
-    case 'S': DSP = 0;                  break;
-    case 'T': isBye = 1;                break;
+void run2(int s) {
+    --s;
+next:
+    switch (CC(++s, 0)) {
+    case 0: return;
+    case '.': if (reg[CC(s, 1)] == '.') { printf("%ld ", PP); }
+            else { printf("%ld ", reg[CC(s, 1)]); }
+        NEXT;
+    case '-': reg[CC(s, 1)] = reg[CC(s, 2)] - reg[CC(s, 3)]; NEXT;
+    case '+': reg[CC(s, 1)] = reg[CC(s, 2)] + reg[CC(s, 3)]; NEXT;
+    case 'B': printf(" "); NEXT;
+    case 'N': printf("\n"); NEXT;
+    case 'd': --reg[CC(s, 1)]; NEXT;
+    case 'i': ++reg[CC(s, 1)]; NEXT;
+    case 'I': PS(L0); NEXT;
+    case 'm': reg[CC(s, 1)] = reg[CC(s, 2)]; NEXT;
+    case 'r': PS(reg[CC(s, 1)]); NEXT;
+    case 's': reg[CC(s, 1)] = PP; NEXT;
+    case 'l': if (CC(s, 1)) { reg[CC(s, 1)] = code[s+1].l; }
+            else { PS(code[s+1].l);  }
+            ++s; NEXT;
+    case 't': reg[CC(s, 1)] = clock(); NEXT;
+    case '[': lsp += 3; L0 = PP; L1 = PP; L2 = s; NEXT;
+    case ']': if (++L0 < L1) { s = L2; }
+            else { lsp -= 3; }
+            NEXT;
+    default: printf("??");
     }
-    return pc;
 }
 
-addr run(addr pc) {
-    long t1, t2;
-    isError = 0;
-    while (!isError && (0 < pc)) {
-        byte ir = USER[pc++];
-        switch (ir) {
-        case 0: RSP = 0; return -1;
-        case ' ': while (USER[pc] == ' ') { pc++; }         // 32
-                break;
-        case '!': doStore(0, USER);                 break;  // 33
-        case '"': buf[1] = 0;                               // 34
-            while ((pc < SZ_USER) && (USER[pc] != '"')) {
-                buf[0] = USER[pc++];
-                printString(buf);
-            }
-            ++pc;                                   break;
-        case '#': push(T);                          break;  // 35 (DUP)
-        case '$': t1 = N; N = T; T = t1;            break;  // 36 (SWAP)
-        case '%': push(N);                          break;  // 37 (OVER)
-        case '&': t1 = pop(); T &= t1;              break;  // 38
-        case '\'': push(USER[pc++]);                break;  // 39
-        case '(': pc = doBegin(pc);                 break;  // 40
-        case ')': pc = doWhile(pc);                 break;  // 41
-        case '*': t1 = pop(); T *= t1;              break;  // 42
-        case '+': t1 = pop(); T += t1;              break;  // 43
-        case ',': buf[0] = (byte)pop(); buf[1] = 0;
-            printString(buf);                       break;  // 44 (EMIT)
-        case '-': t1 = pop(); T -= t1;              break;  // 45
-        case '.': printStringF("%ld", pop());       break;  // 46
-        case '/': t1 = pop();                               // 47
-            if (t1) { T /= t1; }
-            else { isError = 1; }
-            break;  // 47
-        case '0': case '1': case '2': case '3': case '4':   // 48-57
-        case '5': case '6': case '7': case '8': case '9':
-            push(ir - '0');
-            t1 = USER[pc] - '0';
-            while ((0 <= t1) && (t1 <= 9)) {
-                T = (T * 10) + t1;
-                t1 = USER[++pc] - '0';
-            }
-            break;
-        case ':': /* FREE */                         break;  // 58
-        case ';': pc = rpop();                               // 59
-                if ((0 < pc) && (USER[pc-1] == '?')) { pc = rpop(); }
-                if (pc == 0) { RSP = 0; return pc; }
-                break;
-        case '<': t1 = pop(); T = (T <  t1) ? 1 : 0; break;  // 60
-        case '=': t1 = pop(); T = (T == t1) ? 1 : 0; break;  // 61
-        case '>': t1 = pop(); T = (T >  t1) ? 1 : 0; break;  // 62
-        case '?': /* FREE */                         break;  // 63
-        case '@': doFetch(0, USER);                  break;
-        case 'A': ir = USER[pc++]; t2 = 0;
-            if (ir == 'C') { t2 = 1; ir = USER[pc++]; }
-            if (ir == '@') { doFetch((byte)t2, 0); }
-            if (ir == '!') { doStore((byte)t2, 0); }
-            break;
-        case 'B': printString(" ");                  break;
-        case 'C': ir = USER[pc++];
-            if (ir == '@') { doFetch(1, USER); }
-            if (ir == '!') { doStore(1, USER); }
-            break;
-        case 'D': /* FREE */                         break;
-        case 'E': if (0 < LSP) {                             // EXIT loop
-                LOOP_ENTRY_T* x = &LSTK[LSP-1];
-                if (x->end) {
-                    pc = x->end;
-                    LSP--;
-                    if ((0 < RSP) && (USER[R-1] == '?')) { rpop(); }
-                } else {
-                    printString("-NoLoopEnd-");
-                    isError = 1;
-                }
-            }
-            break;
-        case 'F': T = ~T;                            break;
-        case 'G': pc = (addr)pop();                  break;
-        case 'H': push(0);
-            t1 = digitToNum(USER[pc], 0x10, 2);
-            while (0 <= t1) {
-                T = (T * 0x10) + t1;
-                t1 = digitToNum(USER[++pc], 0x10, 2);
-            } break;
-        case 'I': doIJK(pc, 1);                      break;
-        case 'J': doIJK(pc, 2);                      break;
-        case 'K': T *= 1000;                         break;
-        case 'L': N = N << T; DROP1;                 break;
-        case 'M': --T;                               break; // (Minus 1)
-        case 'N': printString("\r\n");               break;
-        case 'O': T = -T;                            break; // (NEGATE)
-        case 'P': ++T;                               break; // (Plus 1)
-        case 'Q': /* FREE */                         break;
-        case 'R': N = N >> T; DROP1;                 break; // (RIGHT-SHIFT)
-        case 'S': t2 = N; t1 = T;                           // (SLASHMOD)
-            if (t1 == 0) { isError = 1; printString("-divByZero-"); }
-            else { N = (t2 / t1); T = (t2 % t1); }
-            break;
-        case 'T': push(millis());                    break;
-        case 'U': if (T < 0) { T = -T; }             break;
-        case 'V': /* FREE */                         break;
-        case 'W': delay(pop());                      break;
-        case 'X': pc = doExt(pc);                    break;
-        case 'Y': t1 = pop();                               // LOAD
-            if (__PC__) {
-                if (input_fp) { fclose(input_fp); }
-                sprintf_s(buf, sizeof(buf), "block.%03ld", t1);
-                fopen_s(&input_fp, buf, "rt");
-            }
-            else { printString("-l:pc only-"); }
-            break;
-        case 'Z': printString((char*)&USER[pop()]);  break;
-        case '[': pc = doFor(pc);                    break;    // 91
-        case '\\': DROP1;                            break;    // 92
-        case ']': pc = doNext(pc);                   break;    // 93
-        case '^': rpush(pc); pc = (addr)pop();       break;    // 94
-        case '_': /* FALL THROUGH */                           // 95
-        case '`': while (USER[pc] && (USER[pc] != ir))         // 96
-            { USER[T++] = USER[pc++]; }
-            ++pc; break;
-        case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-        case 'g': case 'h': case 'i': case 'j': case 'k': case 'l':
-        case 'm': case 'n': case 'o': case 'p': case 'q': case 'r':
-        case 's': case 't': case 'u': case 'v': case 'w': case 'x':
-        case 'y': case 'z': ir -= 'a';
-            pc = getRegNum(pc-1, t1);
-            if (isBetweenI(t1, 0, NUM_REGS-1)) { 
-                push(REG[t1]);
-                ir = USER[pc];
-                if (ir == '+') { ++pc; ++REG[t1]; }
-                if (ir == '-') { ++pc; --REG[t1]; }
-                if (ir == ':') { DROP1; ++pc; REG[t1] = pop(); }
-            } else {
-                isError = 1;
-                printString("-regOOB-");
-            } break;
-        case '{': if (pop()) { break; }                        // 123
-            while (USER[pc++]) { 
-                if (USER[pc - 1] == '}') break; 
-            } break;
-        case '|': t1 = pop(); T |= t1;               break;    // 124
-        case '}': /* FREE */                         break;    // 125
-        case '~': T = (T) ? 0 : 1;                   break;    // 126 (Logical NOT)
-        }
-    }
-    return 0;
+void test2a() {
+    int n = 0;
+    gc(n, "");
+    run2(0);
 }
 
-void setCodeByte(addr loc, char ch) {
-    if ((0 <= loc) && (loc < SZ_USER)) { USER[loc] = ch; }
+void test2() {
+    int n = 0;
+    n = gl(n, 3, 0);
+    n = gl(n, 0, 0);
+    n = gc(n, "[");
+    n = gl(n, LM * 1000 * 1000, 0);
+    n = gl(n, 0, 0);
+    n = gl(n, 0, 'A');
+    n = gl(n, 0, 'B');
+    // n = gs(n, "tS [ ] tE -EES .E ]");
+    n = gs(n, "tS [ iA iB +CAB ] tE -EES .C .E ]");
+
+    gc(n, "");
+    run2(0);
 }
 
-long registerVal(char *reg) {
-    USER[HERE + 0] = reg[0];
-    USER[HERE + 1] = reg[1];
-    USER[HERE + 2] = reg[2];
-    long val = 0;
-    getRegNum(HERE, val);
-    return val;
+void test() {
+    char buf[256];
+    // sprintf_s(buf, sizeof(buf), "3 0[0sA %d 1000#** 0 TsS[] TrS-.B]N", LM);
+    sprintf_s(buf, sizeof(buf), "3 0[0#sAsB %d 1000#** 0 TsS[iAiBrArB+sC] rC .B TrS-.B]N", LM);
+    run(buf);
+}
+
+void loop() {
+    char buf[256];
+    printf("\n>> ");
+    gets_s(buf, sizeof(buf));
+    run(buf);
+}
+
+int main() {
+    sp = rsp = lsp = lb = 0;
+    test();
+    test2();
+    // while (1) { loop(); }
 }
