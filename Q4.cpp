@@ -30,7 +30,7 @@
 #define BTW(a,b,c) ((b<=a)&&(a<=c))
 
 char u, *pc;
-long stk[32], rstk[32], lstk[30], reg[256], sp, rsp, lsp, t;
+long stk[32], rstk[32], lstk[30], reg[256], sp, rsp, lsp, t, here, isErr;
 long locs[100], lb, t1, t2, t3, *pl;
 typedef union {
     char c[4];
@@ -69,7 +69,7 @@ void run(int s) {
 next:
     switch (CC(++s,0)) {
     case 0: return;
-    case '.': if (reg[CC(s,1)] == '.') { printf("%ld ", PP); }
+    case '.': if (CC(s,1)==0) { printf("%ld ", PP); }
             else { printf("%ld ", reg[CC(s, 1)]); }
         NEXT;
     case '-': reg[CC(s,1)] = reg[CC(s,2)] - reg[CC(s,3)]; NEXT;
@@ -88,43 +88,74 @@ next:
             else { PS(CL(s+1));  }
             ++s; NEXT;
     case 't': reg[CC(s,1)] = clock(); NEXT;
+    case 'x': if (CC(s,1)=='Q') { exit(0); }
+        NEXT;
     case '[': lsp += 3; L0 = PP; L1 = PP; L2 = s; NEXT;
     case ']': if (++L0 < L1) { s = L2; }
             else { lsp -= 3; }
             NEXT;
-    default: printf("??");
+    default: printf("-ir(%d)?-", CC(s,0));
     }
 }
 
-void test() {
-    int n = 0;
-    n = gl(n, 10, 0);
-    n = gl(n, 0, 0);
-    n = gc(n, "[");
-    n = gl(n, LM * 1000 * 1000, 0);
-    n = gl(n, 0, 0);
-    n = gl(n, 0, 'A');
-    n = gl(n, 0, 'B');
-    // n = gs(n, "tS [ ] tE -EES .E ]");
-    n = gs(n, "tS [ iA iB +CAB ] tE -EES .E ]");
+char *getWord(char *line, char *w) {
+    while (*line == ' ') { ++line; }
+    while (' ' < *line) { *(w++) = *(line++); }
+    *w = 0;
+    return line;
+}
 
-    gc(n, "");
-    run(0);
+int isNum(char* w) {
+    int n = 0;
+    while (*w) {
+        if (!BTW(*w, '0', '9')) { return 0; }
+        n = (n*10) + (*(w++)-'0');
+    }
+    PS(n);
+    return 1;
+}
+
+int parse(char* w) {
+    if (strcmp(w, "reset") == 0) { here = 0; }
+    if (isNum(w)) { here = gl(here, PP, 0); return 1; }
+    else { here = gs(here, w); return 1; }
+    printf("[%s]??", w);
+    isErr = 1;
+    return 0;
 }
 
 void compile(char *line) {
+    isErr = 0;
+    char w[32];
+    while (1) {
+        line = getWord(line, w);
+        if (strlen(w) == 0) { CC(here,0) = 0; return; }
+        if (parse(w)) { continue; }
+        return;
+    }
 }
 
 void loop() {
+    int xx = here;
     char buf[256];
-    printf("\n>> ");
+    printf("\nq4: ");
     gets_s(buf, sizeof(buf));
     compile(buf);
+    if (!isErr) { run(xx); }
+}
+
+void test() {
+    char buf[256];
+    here = 0;
+    sprintf_s(buf, sizeof(buf), "5 0 [ %d000000 0 tS [ iA iB +CAB ] tE -EES .E ]", LM);
+    compile(buf);
     run(0);
+    here = 0;
 }
 
 int main() {
     sp = rsp = lsp = lb = 0;
     test();
-    // while (1) { loop(); }
+    here = 0;
+    while (1) { loop(); }
 }
