@@ -49,15 +49,18 @@ char u, *pc;
 long stk[32], rstk[32], lstk[30], reg[256], sp, rsp, lsp, t, isErr;
 long locs[100], lb, t1, t2, t3, *pl;
 long here, last, vhere;
-FILE* input_fp = 0;
 uu_t code[CODE_SZ];
 dict_t dict[DICT_SZ];
 char vars[VARS_SZ];
+
+void compileFile(FILE* fp);
 
 void vmInit() {
     here = last = vhere = sp = rsp = lsp = 0;
     for (int i=0; i<CODE_SZ; i++) { CL(i,0) = 0; }
 }
+
+void setErr(const char *msg) { printf("ERROR: %s\n", msg); isErr=1; }
 
 int find(char *w) {
     for (int i=1; i<=last; i++) {
@@ -67,14 +70,10 @@ int find(char *w) {
 }
 
 void create(char *w) {
-    if (find(w)) {
-        isErr=1;
-        printf("-%s already defined-", w);
-        return;
-    }
+    if (find(w)) { printf("-redef: %s-", w); }
     ++last;
     dict[last].xa = (short)here;
-    if (16<strlen(w)) { w[16]=0; }
+    if (15<strlen(w)) { w[16]=0; }
     strcpy(dict[last].nm, w);
 }
 
@@ -169,6 +168,10 @@ char *parse(char* w, char* l) {
     if (strcmp(w, "//") == 0) {
         return 0;
     }
+    if ((w[0]=='s') && (CC(here-2,0)=='l')) {
+        CC(here-2,1) = w[1];
+        return l;
+    }
     if (isNum(w)) {
         here = gl(here, PP, 0);
         return l;
@@ -187,6 +190,13 @@ char *parse(char* w, char* l) {
         if (w[0]) { create(w); }
         else { return 0; }
         return l;
+    }
+    if (strcmp("load",w)==0) {
+        l = getWord(l, w);
+        FILE* fp = fopen(w, "rb");
+        if (fp) { compileFile(fp); fclose(fp); }
+        else { setErr("cannot open file (load)"); }
+        return isErr ? 0 : l;
     }
     if (strcmp("ret",w)==0) {
         here = gc(here, ";");
@@ -226,27 +236,28 @@ void dumpCode() {
     }
 }
 
-void runFile() {
+void compileFile(FILE *fp) {
     char buf[256];
-    while (input_fp) {
+    while (fp) {
         buf[0] = 0;
-        if (fgets(buf, sizeof(buf), input_fp) != buf) {
-            fclose(input_fp);
-            input_fp = 0;
-        }
+        if (fgets(buf, sizeof(buf), fp) != buf) { return; }
         compile(buf);
         if (isErr) { return; }
     }
-    int xa = 0;
-    if (last) { xa = dict[last].xa; }
-    // dumpCode();
-    run(xa);
+}
+
+void runFile(const char *fn) {
+    char buf[32];
+    sprintf(buf, "load %s", fn);
+    compile(buf);
+    if (isErr == 0) {
+        // dumpCode();
+        int xa = (last) ? dict[last].xa : 0;
+        run(xa);
+    }
 }
 
 int main() {
     vmInit();
-    input_fp = fopen("src.q4", "rb");
-    if (input_fp) {
-        runFile();
-    }
+    runFile("src.q4");
 }
