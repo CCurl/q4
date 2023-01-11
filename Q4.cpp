@@ -105,41 +105,41 @@ int gs(int n, const char *str) {
 }
 
 void run(int s) {
-    --s;
 next:
-    switch (CC(++s,0)) {
+    uu_t* p = &code[s++];
+    switch (PC(0)) {
     case 0: return;
-    case '.': if (CC(s,1)==0) { printf("%ld ", PP); }
-            else { printf("%ld ", reg[CC(s, 1)]); }
+    case '.': if (PC(1)==0) { printf("%ld ", PP); }
+            else { printf("%ld ", reg[PC(1)]); }
         NEXT;
-    case '-': reg[CC(s,1)] = reg[CC(s,2)] - reg[CC(s,3)]; NEXT;
-    case '+': reg[CC(s,1)] = reg[CC(s,2)] + reg[CC(s,3)]; NEXT;
-    case '/': reg[CC(s,1)] = reg[CC(s,2)] / reg[CC(s,3)]; NEXT;
-    case '*': reg[CC(s,1)] = reg[CC(s,2)] * reg[CC(s,3)]; NEXT;
-    case '?': if (PP==0) { s = CW(s,1)-1; } NEXT;
-    case ':': RPS(s); s = CW(s,1)-1; NEXT;
+    case '-': reg[PC(1)] = reg[PC(2)] - reg[PC(3)]; NEXT;
+    case '+': reg[PC(1)] = reg[PC(2)] + reg[PC(3)]; NEXT;
+    case '/': reg[PC(1)] = reg[PC(2)] / reg[PC(3)]; NEXT;
+    case '*': reg[PC(1)] = reg[PC(2)] * reg[PC(3)]; NEXT;
+    case '?': if (PP==0) { s = CW(s,1); } NEXT;
+    case ':': RPS(s); s = PW(1); NEXT;
     case ';': if (rsp) { s = RPP; }
         else { return; }
         NEXT;
     case 'B': printf(" "); NEXT;
     case 'N': printf("\n"); NEXT;
-    case 'd': --reg[CC(s,1)]; NEXT;
-    case 'i': ++reg[CC(s,1)]; NEXT;
+    case 'd': --reg[PC(1)]; NEXT;
+    case 'i': ++reg[PC(1)]; NEXT;
     case 'I': PS(L0); NEXT;
-    case 'm': reg[CC(s,1)] = reg[CC(s,2)]; NEXT;
-    case 'r': PS(reg[CC(s,1)]); NEXT;
-    case 's': reg[CC(s,1)] = PP; NEXT;
-    case 'l': if (CC(s,1)) { reg[CC(s, 1)] = CL(s+1,0); }
-            else { PS(CL(s+1,0));  }
+    case 'm': reg[PC(1)] = reg[PC(2)]; NEXT;
+    case 'r': PS(reg[PC(1)]); NEXT;
+    case 's': reg[PC(1)] = PP; NEXT;
+    case 'l': if (PC(1)) { reg[PC(1)] = CL(s,0); }
+            else { PS(CL(s,0));  }
             ++s; NEXT;
-    case 't': reg[CC(s,1)] = clock(); NEXT;
-    case 'x': if (CC(s,1)=='Q') { exit(0); }
+    case 't': reg[PC(1)] = clock(); NEXT;
+    case 'x': if (PC(1)=='Q') { exit(0); }
         NEXT;
     case '[': lsp += 3; L0 = PP; L1 = PP; L2 = s; NEXT;
     case ']': if (++L0 < L1) { s = L2; }
             else { lsp -= 3; }
             NEXT;
-    default: printf("-ir(%d)?-", CC(s,0));
+    default: printf("-ir(%d)?-", PC(0));
     }
 }
 
