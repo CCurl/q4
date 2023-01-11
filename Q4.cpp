@@ -7,12 +7,24 @@
 
 typedef union {
     char c[4];
+    short w[2];
     long l;
 } uu_t;
 
-#define NEXT     goto next
 #define CL(n)    code[n].l
+#define CW(n,x)  code[n].w[x]
 #define CC(n,x)  code[n].c[x]
+
+typedef struct {
+    char nm[16];
+    short xa;
+} dict_t;
+
+#define CODE_SZ   10000
+#define DICT_SZ    1000
+#define VARS_SZ    1000*1000
+
+#define NEXT     goto next
 #define PS(x)    stk[++sp]=(x)
 #define PP       stk[sp--]
 #define TOS      stk[sp]
@@ -31,10 +43,37 @@ typedef union {
 #define BTW(a,b,c) ((b<=a)&&(a<=c))
 
 char u, *pc;
-long stk[32], rstk[32], lstk[30], reg[256], sp, rsp, lsp, t, here, isErr;
+long stk[32], rstk[32], lstk[30], reg[256], sp, rsp, lsp, t, isErr;
 long locs[100], lb, t1, t2, t3, *pl;
+long here, last, vhere;
 FILE* input_fp = 0;
-uu_t code[10000];
+uu_t code[CODE_SZ];
+dict_t dict[DICT_SZ];
+char vars[VARS_SZ];
+
+void vmInit() {
+    here = last = vhere = sp = rsp = lsp = 0;
+    for (int i=0; i<CODE_SZ; i++) { CL(i) = 0; }
+}
+
+int find(char *w) {
+    for (int i=1; i<=last; i++) {
+        if (strcmp(dict[i].nm, w)==0) { return i; }
+    }
+    return 0;
+}
+
+void create(char *w) {
+    if (find(w)) {
+        isErr=1;
+        printf("-%s already defined-", w);
+        return;
+    }
+    ++last;
+    dict[last].xa = here;
+    if (16<strlen(w)) { w[16]=0; }
+    strcpy(dict[last].nm, w);
+}
 
 int gl(int n, long l, char reg) {
     CC(n,0) = 'l';
@@ -74,6 +113,11 @@ next:
     case '+': reg[CC(s,1)] = reg[CC(s,2)] + reg[CC(s,3)]; NEXT;
     case '/': reg[CC(s,1)] = reg[CC(s,2)] / reg[CC(s,3)]; NEXT;
     case '*': reg[CC(s,1)] = reg[CC(s,2)] * reg[CC(s,3)]; NEXT;
+    case '?': if (PP==0) { s = CW(s,1); } NEXT;
+    case ':': RPS(s); s = CW(s,1); NEXT;
+    case ';': if (rsp) { s = RPP; }
+        else { return; }
+        NEXT;
     case 'B': printf(" "); NEXT;
     case 'N': printf("\n"); NEXT;
     case 'd': --reg[CC(s,1)]; NEXT;
@@ -97,7 +141,7 @@ next:
 }
 
 char *getWord(char *line, char *w) {
-    while (*line == ' ') { ++line; }
+    while ((*line) && (*line <= ' ')) { ++line; }
     while (' ' < *line) { *(w++) = *(line++); }
     *w = 0;
     return line;
@@ -113,46 +157,93 @@ int isNum(char* w) {
     return 1;
 }
 
-int parse(char* w) {
-    if (strcmp(w, "reset") == 0) { here = 0; }
-    if (isNum(w)) { here = gl(here, PP, 0); return 1; }
-    else { here = gs(here, w); return 1; }
-    printf("[%s]??", w);
-    isErr = 1;
-    return 0;
+char *parse(char* w, char* l) {
+    // printf("(%s)", w);
+    if (strcmp(w, "reset") == 0) {
+        vmInit();
+        return l;
+    }
+    if (strcmp(w, "//") == 0) {
+        return 0;
+    }
+    if (isNum(w)) {
+        here = gl(here, PP, 0);
+        return l;
+    }
+    if (strcmp("if",w)==0) {
+        PS(here);
+        here = gc(here, "?");
+        return l;
+    }
+    if (strcmp("then",w)==0) {
+        CW(PP,1) = here;
+        return l;
+    }
+    if (strcmp("fn",w)==0) {
+        l = getWord(l, w);
+        if (w[0]) { create(w); }
+        else { return 0; }
+        return l;
+    }
+    if (strcmp("ret",w)==0) {
+        here = gc(here, ";");
+        return l;
+    }
+    int fn = find(w);
+    if (fn) {
+        short xa = dict[fn].xa;
+        CC(here,0) = ':';
+        CW(here,1) = xa-1;
+        // printf("-%s:%d-\n", w, (int)xa);
+        here++;
+        return l;
+    }
+    here = gs(here, w); 
+    return l;
 }
 
 void compile(char *line) {
+    // printf("LINE: %s", line);
     isErr = 0;
     char w[32];
     while (1) {
         line = getWord(line, w);
         if (strlen(w) == 0) { CC(here,0) = 0; return; }
-        if (parse(w)) { continue; }
-        return;
+        line = parse(w, line);
+        if (line == 0) { return; }
     }
 }
 
-void loop() {
-    int xx = here;
+void dumpCode() {
+    for (int i=0; i<here; i++) {
+        printf("%c (%d),%d,%d,%d\n",
+            CC(i,0)>31?CC(i,0):2,
+            CC(i,0),CC(i,1),CC(i,2),CC(i,3)
+        );
+    }
+}
+
+void runFile() {
     char buf[256];
-    if (input_fp != stdin) {
+    while (input_fp) {
+        buf[0] = 0;
         if (fgets(buf, sizeof(buf), input_fp) != buf) {
             fclose(input_fp);
-            input_fp = stdin;
+            input_fp = 0;
         }
+        compile(buf);
+        if (isErr) { return; }
     }
-    if (input_fp == stdin) {
-        printf("\nq4: ");
-        fgets(buf, sizeof(buf), input_fp);
-    } else { printf("%s", buf); }
-    compile(buf);
-    if (!isErr) { run(xx); }
+    int xa = 0;
+    if (last) { xa = dict[last].xa; }
+    // dumpCode();
+    run(xa);
 }
 
 int main() {
-    sp = rsp = lsp = lb = 0;
+    vmInit();
     input_fp = fopen("src.q4", "rb");
-    here = 0;
-    while (1) { loop(); }
+    if (input_fp) {
+        runFile();
+    }
 }

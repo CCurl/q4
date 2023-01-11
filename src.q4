@@ -1,2 +1,15 @@
-1000 sL 5 0 [ 0 sA 0 sB 400000000 0 tS [ iA iB +CAB ] tE -EES /ZEL .C .E .Z N ]
-xQ
+fn Bench
+    0 sA 0 sB
+    400000000 0 tS [ iA iB +CAB ]
+    tE -EES /ZEL
+    .C .E .Z N 
+ret
+
+fn Benches
+    0 [ Bench ]
+ret
+
+fn main
+    1000 sL 
+    3 Benches
+ret
