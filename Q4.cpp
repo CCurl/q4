@@ -116,7 +116,7 @@ next:
     case '+': reg[PC(1)] = reg[PC(2)] + reg[PC(3)]; NEXT;
     case '/': reg[PC(1)] = reg[PC(2)] / reg[PC(3)]; NEXT;
     case '*': reg[PC(1)] = reg[PC(2)] * reg[PC(3)]; NEXT;
-    case '?': if (PP==0) { s = CW(s,1); } NEXT;
+    case '?': if (PP==0) { s = PW(1); } NEXT;
     case ':': RPS(s); s = PW(1); NEXT;
     case ';': if (rsp) { s = RPP; }
         else { return; }
@@ -129,9 +129,9 @@ next:
     case 'm': reg[PC(1)] = reg[PC(2)]; NEXT;
     case 'r': PS(reg[PC(1)]); NEXT;
     case 's': reg[PC(1)] = PP; NEXT;
-    case 'l': if (PC(1)) { reg[PC(1)] = CL(s,0); }
-            else { PS(CL(s,0));  }
-            ++s; NEXT;
+    case 'l': if (PC(1)) { reg[PC(1)] = CL(s++,0); }
+            else { PS(CL(s++,0));  }
+            NEXT;
     case 't': reg[PC(1)] = clock(); NEXT;
     case 'x': if (PC(1)=='Q') { exit(0); }
         NEXT;
