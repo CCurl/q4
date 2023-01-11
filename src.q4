@@ -11,5 +11,5 @@ ret
 
 fn main
     1000 sL 
-    3 Benches
+    10 Benches
 ret

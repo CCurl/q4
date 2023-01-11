@@ -8,12 +8,15 @@
 typedef union {
     char c[4];
     short w[2];
-    long l;
+    long l[1];
 } uu_t;
 
-#define CL(n)    code[n].l
+#define CL(n,x)  code[n].l[x]
 #define CW(n,x)  code[n].w[x]
 #define CC(n,x)  code[n].c[x]
+#define PL(x)    p->l[x]
+#define PW(x)    p->w[x]
+#define PC(x)    p->c[x]
 
 typedef struct {
     char nm[16];
@@ -53,7 +56,7 @@ char vars[VARS_SZ];
 
 void vmInit() {
     here = last = vhere = sp = rsp = lsp = 0;
-    for (int i=0; i<CODE_SZ; i++) { CL(i) = 0; }
+    for (int i=0; i<CODE_SZ; i++) { CL(i,0) = 0; }
 }
 
 int find(char *w) {
@@ -70,7 +73,7 @@ void create(char *w) {
         return;
     }
     ++last;
-    dict[last].xa = here;
+    dict[last].xa = (short)here;
     if (16<strlen(w)) { w[16]=0; }
     strcpy(dict[last].nm, w);
 }
@@ -78,12 +81,12 @@ void create(char *w) {
 int gl(int n, long l, char reg) {
     CC(n,0) = 'l';
     CC(n,1) = reg;
-    CL(n+1) = l;
+    CL(n+1,0) = l;
     return n+2;
 }
 
 int gc(int n, const char *str) {
-    CL(n) = 0;
+    CL(n,0) = 0;
     if (0 < strlen(str)) CC(n,0) = str[0];
     if (1 < strlen(str)) CC(n,1) = str[1];
     if (2 < strlen(str)) CC(n,2) = str[2];
@@ -113,8 +116,8 @@ next:
     case '+': reg[CC(s,1)] = reg[CC(s,2)] + reg[CC(s,3)]; NEXT;
     case '/': reg[CC(s,1)] = reg[CC(s,2)] / reg[CC(s,3)]; NEXT;
     case '*': reg[CC(s,1)] = reg[CC(s,2)] * reg[CC(s,3)]; NEXT;
-    case '?': if (PP==0) { s = CW(s,1); } NEXT;
-    case ':': RPS(s); s = CW(s,1); NEXT;
+    case '?': if (PP==0) { s = CW(s,1)-1; } NEXT;
+    case ':': RPS(s); s = CW(s,1)-1; NEXT;
     case ';': if (rsp) { s = RPP; }
         else { return; }
         NEXT;
@@ -126,8 +129,8 @@ next:
     case 'm': reg[CC(s,1)] = reg[CC(s,2)]; NEXT;
     case 'r': PS(reg[CC(s,1)]); NEXT;
     case 's': reg[CC(s,1)] = PP; NEXT;
-    case 'l': if (CC(s,1)) { reg[CC(s, 1)] = CL(s+1); }
-            else { PS(CL(s+1));  }
+    case 'l': if (CC(s,1)) { reg[CC(s, 1)] = CL(s+1,0); }
+            else { PS(CL(s+1,0));  }
             ++s; NEXT;
     case 't': reg[CC(s,1)] = clock(); NEXT;
     case 'x': if (CC(s,1)=='Q') { exit(0); }
@@ -176,7 +179,7 @@ char *parse(char* w, char* l) {
         return l;
     }
     if (strcmp("then",w)==0) {
-        CW(PP,1) = here;
+        CW(PP,1) = (short)here;
         return l;
     }
     if (strcmp("fn",w)==0) {
@@ -193,7 +196,7 @@ char *parse(char* w, char* l) {
     if (fn) {
         short xa = dict[fn].xa;
         CC(here,0) = ':';
-        CW(here,1) = xa-1;
+        CW(here,1) = xa;
         // printf("-%s:%d-\n", w, (int)xa);
         here++;
         return l;
@@ -216,8 +219,8 @@ void compile(char *line) {
 
 void dumpCode() {
     for (int i=0; i<here; i++) {
-        printf("%c (%d),%d,%d,%d\n",
-            CC(i,0)>31?CC(i,0):2,
+        printf("%3i: %c (%d),%d,%d,%d\n",
+            i, CC(i,0)>31?CC(i,0):32,
             CC(i,0),CC(i,1),CC(i,2),CC(i,3)
         );
     }
