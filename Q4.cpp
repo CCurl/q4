@@ -115,6 +115,9 @@ next:
     case '+': reg[PC(1)] = reg[PC(2)] + reg[PC(3)]; NEXT;
     case '/': reg[PC(1)] = reg[PC(2)] / reg[PC(3)]; NEXT;
     case '*': reg[PC(1)] = reg[PC(2)] * reg[PC(3)]; NEXT;
+    case '=': NOS=(NOS==TOS)?-1:0; D1; NEXT;
+    case '<': NOS=(NOS<TOS)?-1:0; D1; NEXT;
+    case '>': NOS=(NOS>TOS)?-1:0; D1; NEXT;
     case '?': if (PP==0) { s = PW(1); } NEXT;
     case ':': RPS(s); s = PW(1); NEXT;
     case ';': if (rsp) { s = RPP; }
@@ -138,6 +141,11 @@ next:
     case ']': if (++L0 < L1) { s = L2; }
             else { lsp -= 3; }
             NEXT;
+    // case '{': NEXT;
+    case '}': if (TOS && (PC(1)=='w')) { s = PW(1); }
+            if ((TOS==0) && (PC(1)=='u')) { s = PW(1); }
+            if (PC(1)=='r') { s = PW(1); }
+            D1;  NEXT;
     default: printf("-ir(%d)?-", PC(0));
     }
 }
@@ -183,6 +191,25 @@ char *parse(char* w, char* l) {
     }
     if (strcmp("then",w)==0) {
         CW(PP,1) = (short)here;
+        return l;
+    }
+    if (strcmp("begin",w)==0) {
+        PS(here);
+        return l;
+    }
+    if (strcmp("while",w)==0) {
+        here = gc(here, "}w");
+        CW(here-1,1) = (short)PP;
+        return l;
+    }
+    if (strcmp("until",w)==0) {
+        here = gc(here, "}u");
+        CW(here-1,1) = (short)PP;
+        return l;
+    }
+    if (strcmp("repeat",w)==0) {
+        here = gc(here, "}r");
+        CW(here-1,1) = (short)PP;
         return l;
     }
     if (strcmp("fn",w)==0) {
@@ -252,7 +279,7 @@ void runFile(const char *fn) {
     sprintf(buf, "load %s", fn);
     compile(buf);
     if (isErr == 0) {
-        // dumpCode();
+        dumpCode();
         int xa = (last) ? dict[last].xa : 0;
         run(xa);
     }

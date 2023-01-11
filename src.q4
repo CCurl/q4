@@ -1,19 +1,41 @@
 fn Bench
     0 sA 0 sB
     400000000 0 tS [ iA iB +CAB ]
-    tE -EES /ZEL
-    .C .E .Z N 
+    tE -TES /ZTY
+    .C .T .Z N 
 ret
 
 fn Benches
     0 [ Bench ]
 ret
 
+fn WhileTest
+    sA rA 1 < if ret then
+    begin .A dA rA while N
+ret
+
+fn UntilTest
+    sB sA
+    begin .A iA rA rB > until N
+ret
+
+fn RepeatTest
+    sB sA
+    begin
+       rA rB > if ret then
+      .A iA
+    repeat N
+ret
+
 fn main
-    123 if 444555 . N then
-    // m=10, x=90, b=100, l=m*x+b
-    10 sM 95 sX 50 sB
-    *LMX +LLB .L N
-    4 Benches
-    0 if 666777 . N then
+    123 123 = if 123123 . N then
+    123 124 < if 123124 . N then
+    10 sM 95 sX 50 sB // m=10, x=90, b=100
+    *YMX +YYB .Y N    // y=m*x+b
+    3 Benches
+    10 WhileTest
+     0 WhileTest
+    33 44 UntilTest
+    90 100 RepeatTest
+    123 456 > if 123456 . N then
 ret
