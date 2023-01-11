@@ -11,7 +11,9 @@ ret
 
 fn main
     123 if 444555 . N then
-    1000 sL .L N
+    // m=10, x=90, b=100, l=m*x+b
+    10 sM 95 sX 50 sB
+    *LMX +LLB .L N
     4 Benches
     0 if 666777 . N then
 ret

@@ -227,11 +227,12 @@ void compile(char *line) {
     }
 }
 
+#define MP(x) (x>31)?x:'.'
 void dumpCode() {
     for (int i=0; i<here; i++) {
-        printf("%3i: %c (%d),%d,%d,%d\n",
-            i, CC(i,0)>31?CC(i,0):32,
-            CC(i,0),CC(i,1),CC(i,2),CC(i,3)
+        int a=CC(i,0), b=CC(i,1), c=CC(i,2), d=CC(i,3);
+        printf("%3i: %4d, %4d, %4d, %4d - %c%c%c%c\n",
+            i, a, b, c, d, MP(a), MP(b), MP(c), MP(d)
         );
     }
 }
