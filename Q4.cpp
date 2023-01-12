@@ -116,18 +116,23 @@ next:
     case LIT: if (PC(1)) { reg[PC(1)]=CL(s++,0); }
         else { PS(CL(s++,0)); }; NEXT;
     case CALL: RPS(0); RPS(s); s = PW(1); NEXT;
-    case RET: if (rsp==0) { return; }
-        s = RPP; if (RPP) {
-            for (int i=0; i<10; i++) { reg['0'+i]=locs[lb+i]; }
-            lb -= (lb) ? 10 : 0;
+    case RET: if (rsp<1) { rsp=0; return; }
+        s = RPP; t1 = RPP; if (t1) {
+            lb -= t1; if (lsp<0) { lsp=0; }
+            for (int i=0; i<t1; i++) { reg['0'+i]=locs[lb+i]; }
         } NEXT;
-    case '.': if (PC(1)==0) { printf("%ld ", PP); }
-        else { printf("%ld ", reg[PC(1)]); }
+    case '.': if (PC(1)) { printf("%ld", reg[PC(1)]); }
+        else { printf("%ld", PP); }
+        if (PC(2)=='B') { printf(" "); }
+        NEXT;
+    case ',': if (PC(1)) { printf("%c", (char)reg[PC(1)]); }
+        else { printf("%c", (char)PP); }
         NEXT;
     case '-': reg[PC(1)] = reg[PC(2)] - reg[PC(3)]; NEXT;
     case '+': reg[PC(1)] = reg[PC(2)] + reg[PC(3)]; NEXT;
     case '/': reg[PC(1)] = reg[PC(2)] / reg[PC(3)]; NEXT;
     case '*': reg[PC(1)] = reg[PC(2)] * reg[PC(3)]; NEXT;
+    case '\'': PS(PC(1)); NEXT;
     case '=': NOS=(NOS==TOS)?-1:0; D1; NEXT;
     case '<': NOS=(NOS<TOS)?-1:0; D1; NEXT;
     case '>': NOS=(NOS>TOS)?-1:0; D1; NEXT;
@@ -138,8 +143,9 @@ next:
     case 'i': ++reg[PC(1)]; NEXT;
     case 'I': PS(L0); NEXT;
     case 'l': if (PC(1)=='+') {
-            lb+=10; R1 = 1;
-            for (int i=0; i<10; i++) { locs[lb+i]=reg['0'+i]; }
+            R1 = PP+1;
+            for (int i=0; i<R1; i++) { locs[lb+i]=reg['0'+i]; }
+            lb += R1;
         } NEXT;
     case 'm': reg[PC(1)] = reg[PC(2)]; NEXT;
     case 'r': PS(reg[PC(1)]); NEXT;
