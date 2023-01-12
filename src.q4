@@ -22,20 +22,26 @@ ret
 fn RepeatTest
     sB sA
     begin
-       rA rB > if ret then
+       rA rB > if N ret then
       .A iA
-    repeat N
+    repeat
+ret
+
+fn LocTest
+    .0 .9 N l+ 321 s0 789 s9 .0 .9 N
 ret
 
 fn main
-    123 123 = if 123123 . N then
-    123 124 < if 123124 . N then
+    123 123 = if 123123 . then
+    123 124 < if 123124 . then
     10 sM 95 sX 50 sB // m=10, x=90, b=100
     *YMX +YYB .Y N    // y=m*x+b
-    3 Benches
-    10 WhileTest
+    1 Benches
+    10  WhileTest
      0 WhileTest
     33 44 UntilTest
     90 100 RepeatTest
+    123 s0 987 s9 LocTest .0 .9 N
+
     123 456 > if 123456 . N then
 ret

@@ -45,6 +45,10 @@ typedef struct {
 #define L3       lstk[lsp-3]
 #define BTW(a,b,c) ((b<=a)&&(a<=c))
 
+#define LIT    1
+#define CALL   2
+#define RET    3
+
 char u, *pc;
 long stk[32], rstk[32], lstk[30], reg[256], sp, rsp, lsp, t, isErr;
 long locs[100], lb, t1, t2, t3, *pl;
@@ -77,14 +81,14 @@ void create(char *w) {
     strcpy(dict[last].nm, w);
 }
 
-int gl(int n, long l, char reg) {
-    CC(n,0) = 'l';
+int glit(int n, long l, char reg) {
+    CC(n,0) = LIT;
     CC(n,1) = reg;
     CL(n+1,0) = l;
     return n+2;
 }
 
-int gc(int n, const char *str) {
+int gcode(int n, const char *str) {
     CL(n,0) = 0;
     if (0 < strlen(str)) CC(n,0) = str[0];
     if (1 < strlen(str)) CC(n,1) = str[1];
@@ -93,7 +97,7 @@ int gc(int n, const char *str) {
     return n + 1;
 }
 
-int gs(int n, const char *str) {
+int gstr(int n, const char *str) {
     int i = 0;
     while (*str) {
         char c = *(str++);
@@ -106,10 +110,19 @@ int gs(int n, const char *str) {
 void run(int s) {
 next:
     uu_t* p = &code[s++];
+    // printf("-pc:%d:(%d)-",s-1,PC(0));
     switch (PC(0)) {
     case 0: return;
+    case LIT: if (PC(1)) { reg[PC(1)]=CL(s++,0); }
+        else { PS(CL(s++,0)); }; NEXT;
+    case CALL: RPS(0); RPS(s); s = PW(1); NEXT;
+    case RET: if (rsp==0) { return; }
+        s = RPP; if (RPP) {
+            for (int i=0; i<10; i++) { reg['0'+i]=locs[lb+i]; }
+            lb -= (lb) ? 10 : 0;
+        } NEXT;
     case '.': if (PC(1)==0) { printf("%ld ", PP); }
-            else { printf("%ld ", reg[PC(1)]); }
+        else { printf("%ld ", reg[PC(1)]); }
         NEXT;
     case '-': reg[PC(1)] = reg[PC(2)] - reg[PC(3)]; NEXT;
     case '+': reg[PC(1)] = reg[PC(2)] + reg[PC(3)]; NEXT;
@@ -119,21 +132,18 @@ next:
     case '<': NOS=(NOS<TOS)?-1:0; D1; NEXT;
     case '>': NOS=(NOS>TOS)?-1:0; D1; NEXT;
     case '?': if (PP==0) { s = PW(1); } NEXT;
-    case ':': RPS(s); s = PW(1); NEXT;
-    case ';': if (rsp) { s = RPP; }
-        else { return; }
-        NEXT;
     case 'B': printf(" "); NEXT;
     case 'N': printf("\n"); NEXT;
     case 'd': --reg[PC(1)]; NEXT;
     case 'i': ++reg[PC(1)]; NEXT;
     case 'I': PS(L0); NEXT;
+    case 'l': if (PC(1)=='+') {
+            lb+=10; R1 = 1;
+            for (int i=0; i<10; i++) { locs[lb+i]=reg['0'+i]; }
+        } NEXT;
     case 'm': reg[PC(1)] = reg[PC(2)]; NEXT;
     case 'r': PS(reg[PC(1)]); NEXT;
     case 's': reg[PC(1)] = PP; NEXT;
-    case 'l': if (PC(1)) { reg[PC(1)] = CL(s++,0); }
-            else { PS(CL(s++,0));  }
-            NEXT;
     case 't': reg[PC(1)] = clock(); NEXT;
     case 'x': if (PC(1)=='Q') { exit(0); }
         NEXT;
@@ -141,10 +151,9 @@ next:
     case ']': if (++L0 < L1) { s = L2; }
             else { lsp -= 3; }
             NEXT;
-    // case '{': NEXT;
-    case '}': if (TOS && (PC(1)=='w')) { s = PW(1); }
-            if ((TOS==0) && (PC(1)=='u')) { s = PW(1); }
-            if (PC(1)=='r') { s = PW(1); }
+    case '}': if (PC(1)=='r') { s = PW(1); }
+            else if ((PC(1)=='w') && (TOS)) { s = PW(1); }
+            else if ((PC(1)=='u') && (!TOS)) { s = PW(1); }
             D1;  NEXT;
     default: printf("-ir(%d)?-", PC(0));
     }
@@ -169,49 +178,20 @@ int isNum(char* w) {
 
 char *parse(char* w, char* l) {
     // printf("(%s)", w);
-    if (strcmp(w, "reset") == 0) {
-        vmInit();
-        return l;
-    }
-    if (strcmp(w, "//") == 0) {
-        return 0;
-    }
-    if ((w[0]=='s') && (CC(here-2,0)=='l')) {
-        CC(here-2,1) = w[1];
-        return l;
-    }
-    if (isNum(w)) {
-        here = gl(here, PP, 0);
-        return l;
-    }
-    if (strcmp("if",w)==0) {
-        PS(here);
-        here = gc(here, "?");
-        return l;
-    }
-    if (strcmp("then",w)==0) {
-        CW(PP,1) = (short)here;
-        return l;
-    }
-    if (strcmp("begin",w)==0) {
-        PS(here);
-        return l;
-    }
-    if (strcmp("while",w)==0) {
-        here = gc(here, "}w");
-        CW(here-1,1) = (short)PP;
-        return l;
-    }
-    if (strcmp("until",w)==0) {
-        here = gc(here, "}u");
-        CW(here-1,1) = (short)PP;
-        return l;
-    }
-    if (strcmp("repeat",w)==0) {
-        here = gc(here, "}r");
-        CW(here-1,1) = (short)PP;
-        return l;
-    }
+    if (strcmp(w, "//") == 0) { return 0; }
+    if (strcmp(w, "reset") == 0) { vmInit(); return l; }
+    if (isNum(w)) { here = glit(here, PP, 0); return l; }
+    if ((w[0]=='s') && (CC(here-2,0)==LIT)) { CC(here-2,1)=w[1]; return l; }
+
+    if (strcmp("if",w)==0) { PS(here); here=gcode(here, "?"); return l; }
+    if (strcmp("then",w)==0) { CW(PP,1)=(short)here; return l; }
+
+    #define WUR(a) here=gcode(here,a); CW(here-1,1)=(short)PP; return l
+    if (strcmp("begin",w)==0) { PS(here); return l; }
+    if (strcmp("while",w)==0) { WUR("}w"); }
+    if (strcmp("until",w)==0) { WUR("}u"); }
+    if (strcmp("repeat",w)==0) { WUR("}r"); }
+
     if (strcmp("fn",w)==0) {
         l = getWord(l, w);
         if (w[0]) { create(w); }
@@ -225,27 +205,25 @@ char *parse(char* w, char* l) {
         else { setErr("cannot open file (load)"); }
         return isErr ? 0 : l;
     }
+    t1 = find(w);
+    if (t1) {
+        short xa = dict[t1].xa;
+        CC(here,0) = CALL;
+        CW(here++,1) = xa;
+        return l;
+    }
     if (strcmp("ret",w)==0) {
-        here = gc(here, ";");
+        CW(here++,0) = RET;
         return l;
     }
-    int fn = find(w);
-    if (fn) {
-        short xa = dict[fn].xa;
-        CC(here,0) = ':';
-        CW(here,1) = xa;
-        // printf("-%s:%d-\n", w, (int)xa);
-        here++;
-        return l;
-    }
-    here = gs(here, w); 
+    here = gstr(here, w); 
     return l;
 }
 
 void compile(char *line) {
     // printf("LINE: %s", line);
-    isErr = 0;
     char w[32];
+    isErr = 0;
     while (1) {
         line = getWord(line, w);
         if (strlen(w) == 0) { CC(here,0) = 0; return; }
@@ -279,7 +257,7 @@ void runFile(const char *fn) {
     sprintf(buf, "load %s", fn);
     compile(buf);
     if (isErr == 0) {
-        dumpCode();
+        // dumpCode();
         int xa = (last) ? dict[last].xa : 0;
         run(xa);
     }
