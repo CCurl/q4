@@ -49,25 +49,26 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /*<33*/ void NOP() { }
 /* ! */ void f33() { data[expr()] = ACC; }
 /* " */ void f34() { while (*pc!='"') { putchar(*(pc++)); } ++pc; }
-/* # */ void f35() { stk[++sp] = pc+1; pc = &code[funcs[*pc-'A']]; }
+/* # */ void f35() { }
 /* $ */ void f36() { }
-/* % */ void f37() { funcs[NR-'A'] = here; while (*pc) {
-                if ((*pc==';') && (code[here-1]==';')) { break; }
-                else { code[here++]=*(pc++); }
-            } ++pc;
-        }
+/* & */ void f37() { }
 /* & */ void f38() { }
 /* ' */ void f39() { ACC = NR; }
 /* ( */ void f40() { if (!ACC) { while (*(pc++) != ')') { ; } } }
 /* ) */ void f41() { }
 /* * */ void f42() { ACC *= expr(); }
-/* + */ void f43() { ACC += expr(); }
+/* + */ void f43() { if (*pc == '+') { ++pc; ++RG(NR); } else { ACC += expr(); } }
 /* , */ void f44() { putchar((int)ACC); }
-/* - */ void f45() { ACC -= expr(); }
+/* - */ void f45() { if (*pc == '-') { ++pc; ++RG(NR); } else { ACC -= expr(); } }
 /* . */ void f46() { printf("%ld", ACC); }
 /* / */ void f47() { ACC /= expr(); }
 /*0-9*/ void n09() { --pc; ACC = expr(); }
-/* : */ void f58() { RG(NR) = ACC; }
+/* : */ void f58() { if (*pc != ':') { RG(NR) = ACC; return; }
+            ++pc; funcs[NR-'A'] = here; while (*pc) {
+                if ((*pc==';') && (code[here-1]==';')) { break; }
+                else { code[here++]=*(pc++); }
+            } ++pc;
+        }
 /* ; */ void f59() { if (0 < sp) { pc = stk[sp--]; } else { sp = 0; pc = 0; } }
 /* < */ void f60() { ACC = (ACC < expr()) ? -1 : 0; }
 /* = */ void f61() { ACC = (ACC == expr()) ? -1 : 0;}
@@ -76,16 +77,20 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* @ */ void f64() { ACC = data[ACC]; }
 /*A2Z*/ void A2Z() { ACC = RG(IR); }
 /* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(long)pc; }
-/* \ */ void f92() { t1 = NR; if (t1=='t') { ACC = clock(); }
-            else if (t1 == 'i') { ACC = L0; }
-            else if (t1 == 'u') { lsp =- 3; }
-            else if (t1 == 'q') { isBye = 1; }
-        }
+/* \ */ void f92() { }
 /* ] */ void f93() { if (++L0<L1) { pc=(char *)L2; } else { lsp-=3; } }
-/* ^ */ void f94() { ++RG(NR); }
-/* _ */ void f95() { --RG(NR); }
+/* ^ */ void f94() { stk[++sp]=pc+1; pc=&code[funcs[*pc-'A']]; return; }
+/* _ */ void f95() { }
 /* ` */ void f96() { }
-/*a-z*/ void a2z() { t1 = IR; printf("-call (%c)-", t1); }
+/* d */ void f100() { }
+/* i */ void f105() { ACC = L0; }
+/*a-z*/ void a2z() { }
+/* x */ void f120() { t1 = NR; if (t1=='T') { ACC = clock(); }
+            else if (t1 == 'B') { putchar(' '); }
+            else if (t1 == 'N') { putchar(10); }
+            else if (t1 == 'U') { lsp =- 3; }
+            else if (t1 == 'Q') { isBye = 1; }
+        }
 /* { */ void f123() { lsp += 3; L0 = (long)pc; }
 /* | */ void f124() { }
 /* } */ void f125() { if (ACC) { pc = (char*)L0; } else { lsp -= 3; } }
@@ -98,8 +103,8 @@ void (*jt[128])()={
     n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  f58,  f59,  f60,  f61,  f62,  f63,   //  48 ..  63
     f64,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,   //  64 ..  79
     A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  f91,  f92,  f93,  f94,  f95,   //  80 ..  95
-    f96,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,   //  96 .. 111
-    a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  f123, f124, f125, f126, XXX    // 112 .. 127
+    f96,  a2z,  a2z,  a2z,  f100, a2z,  a2z,  a2z,  a2z,  f105, a2z,  a2z,  a2z,  a2z,  a2z,  a2z,   //  96 .. 111
+    a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  f120, a2z,  a2z,  f123, f124, f125, f126, XXX    // 112 .. 127
 };
 
 void Run(const char *x) {
