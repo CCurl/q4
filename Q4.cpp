@@ -24,18 +24,18 @@
 #define L1           lstk[lsp-1]
 #define L2           lstk[lsp-2]
 
-char code[CODE_SZ];
+char code[CODE_SZ], funcs[26], here;
 long data[DATA_SZ];
-long regs[128], stk[STK_SZ], lstk[100];
+long regs[128], lstk[100];
 
 static char ex[256], *pc;
-static const char *y;
-static int rsp, lsp, t1, t2;
+static char *y, *stk[STK_SZ];
+static int sp, lsp, t1, t2, isBye;
 
 inline float toFlt(int x) { return *(float*)&x; }
 inline int toInt(float x) { return *(int*)&x; }
 
-int expr() {
+long expr() {
     if (BTW(*pc, '0', '9')) {
         t1 = *(pc++) - '0';
         while (BTW(*pc, '0', '9')) { t1 = (t1 * 10) + *(pc++) - '0'; }
@@ -47,26 +47,28 @@ int expr() {
 void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /*<33*/ void NOP() { }
 /* ! */ void f33() { data[expr()] = ACC; }
-/* " */ void f34() { }
-/* # */ void f35() { }
+/* " */ void f34() { while (*pc!='"') { putchar(*(pc++)); } ++pc; }
+/* # */ void f35() { stk[++sp] = pc+1; pc = &code[funcs[*pc-'A']]; }
 /* $ */ void f36() { }
-/* % */ void f37() { }
+/* % */ void f37() { funcs[NR-'A']=here; 
+            while (*(pc)!='$') { code[here++]=*(pc++); } code[here++]=';';
+        }
 /* & */ void f38() { }
-/* ' */ void f39() { }
-/* ( */ void f40() { }
+/* ' */ void f39() { ACC = NR; }
+/* ( */ void f40() { if (!ACC) { while (*(pc++) != ')') { ; } } }
 /* ) */ void f41() { }
 /* * */ void f42() { ACC *= expr(); }
 /* + */ void f43() { ACC += expr(); }
-/* , */ void f44() { printf("%c", expr()); }
+/* , */ void f44() { putchar((int)expr()); }
 /* - */ void f45() { ACC -= expr(); }
-/* . */ void f46() { printf("%d", expr()); }
+/* . */ void f46() { printf("%ld", expr()); }
 /* / */ void f47() { ACC /= expr(); }
 /*0-9*/ void n09() { --pc; ACC = expr(); }
 /* : */ void f58() { RG(NR) = ACC; }
-/* ; */ void f59() { t1 = NR; RG(NR) = RG(t1); }
-/* < */ void f60() { }
-/* = */ void f61() { }
-/* > */ void f62() { }
+/* ; */ void f59() { if (0 < sp) { pc = stk[sp--]; } else { sp = 0; pc = 0; } }
+/* < */ void f60() { ACC = (ACC < expr()) ? -1 : 0; }
+/* = */ void f61() { ACC = (ACC == expr()) ? -1 : 0;}
+/* > */ void f62() { ACC = (ACC > expr()) ? -1 : 0;}
 /* ? */ void f63() { }
 /* @ */ void f64() { ACC = data[expr()]; }
 /*A2Z*/ void A2Z() { ACC = RG(IR); }
@@ -74,6 +76,7 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* \ */ void f92() { t1 = NR; if (t1=='t') { ACC = clock(); }
             else if (t1 == 'i') { ACC = L0; }
             else if (t1 == 'u') { lsp =- 3; }
+            else if (t1 == 'q') { isBye = 1; }
         }
 /* ] */ void f93() { if (++L0<L1) { pc=(char *)L2; } else { lsp-=3; } }
 /* ^ */ void f94() { ++RG(NR); }
@@ -83,7 +86,7 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* { */ void f123() { lsp += 3; L0 = (long)pc; }
 /* | */ void f124() { }
 /* } */ void f125() { if (ACC) { pc = (char*)L0; } else { lsp -= 3; } }
-/* ~ */ void f126() { printf("bye."); exit(0); }
+/* ~ */ void f126() { }
 
 void (*jt[128])()={
     XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //   0 ..  15
@@ -96,15 +99,17 @@ void (*jt[128])()={
     a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  f123, f124, f125, f126, XXX    // 112 .. 127
 };
 
-void R(const char *x) {
-    rsp = lsp = 0;
+void Run(const char *x) {
+    sp = lsp = 0;
     pc = (char *)x;
     while (pc) { jt[*(pc++)](); }
 }
 void H(char *s) { /* FILE* fp = fopen("h.txt", "at"); if (fp) { fprintf(fp, "%s", s); fclose(fp); } */ }
-void L() {
+void Loop() {
     printf("\nq4: ");
-    fgets(ex, 128, stdin); H(ex); R(ex);
+    if (fgets(ex, 128, stdin) != ex) { ex[0] = '~'; }
+    // H(ex);
+    Run(ex);
 }
 int main(int argc, char *argv[]) {
     //int i,j; s=sb-1; h=cb; ir=SZ-500; for (i=0; i<(SZ/4); i++) { st.i[i]=0; }
@@ -114,10 +119,11 @@ int main(int argc, char *argv[]) {
     //if ((argc>1) && (argv[1][0]!='-')) { FILE *fp=fopen(argv[1], "rb"); 
     //    if (fp) {while ((c=fgetc(fp))!=EOF) { st.b[h++]=(31<c)?c:32; } fclose(fp); st.i[0]=h; R(cb); }
     //} 
-    R("32:L 10:N");
-    R("123:B 321+B :C .A ,L .C ,N");
-    R("33:B ;BC .C ,N");
-    R("200:B 111!B @200 .B ,L .A ,N");
-    while (1) { L(); }
+    here = 1;
+    Run("32:L 10:N");
+    Run("123:B 321+B :C .A ,L .C ,N");
+    Run("33:B ;BC .C ,N");
+    Run("200:B 111!B @200 .B ,L .A ,N");
+    while (isBye == 0) { Loop(); }
     return 0;
 }

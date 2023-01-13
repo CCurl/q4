@@ -15,8 +15,13 @@ There are 26 registers, [A-Z].
 
 ## Reference
 ```
+"string"    Print "string".
 .<expr>     Print the value of <expr> as a decimal number.
 ,<expr>     Print the value of <expr> as an ASCII character.
+
+%<A-Z>...$  Define function <X>.
+#<A-Z>      Call function <X>.
+;           Return from function.
 
 <0-9>*      Parse a decimal number into ACC.
 <A-Z>       Copy the value of register <X> into ACC.
@@ -27,17 +32,26 @@ There are 26 registers, [A-Z].
 *<expr>     ACC = ACC * <expr>.
 /<expr>     ACC = ACC / <expr>.
 
+^<A-Z>      Increment register <X>.
+_<A-Z>      Decrement register <X>.
+
+<(expr)     ACC = (ACC < (expr)) ? -1 : 0.
+=(expr)     ACC = (ACC = (expr)) ? -1 : 0.
+>(expr)     ACC = (ACC > (expr)) ? -1 : 0.
+
+(<code>)    IF: If (ACC = 0), skip to next ')'.
+
 !<expr>     Store ACC to address <expr>. (eg - "22!3456" stores 22 to [3456])
 @<expr>     Get value at address <expr> into ACC. (eg = "@3456" gets the value at [22])
 
-[           Begin FOR loop. Execute the loop ACC times. Initialize \i to 0.
+[           FOR LOOP: Set <count> = ACC. Initialize \i to 0.
 \i          Iteration counter of the current FOR loop (range: 0 to <expr>-1).
-]           Increment \i. If less than <expr>, jump back to the beginning.
+]           Increment \i. If (\i < <count>), jump back to the beginning.
 
-{           Begin WHILE loop.
-}           End WHILE loop. If ACC != 0, jump back to the beginning.
+{           WHILE LOOP: Begin.
+}           End WHILE loop. If (ACC != 0), jump back to the beginning.
 
 \t          The current clock() value
-\u          Unwind the current loop.
+\u          Unwind the current FOR or WHILE loop.
 ~           Exit
 ```
