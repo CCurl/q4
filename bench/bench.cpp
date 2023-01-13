@@ -34,7 +34,7 @@ void bench() {
     int a = 0, b = 0, c;
     for (int i = 0; i < 400000000; i++) { c = (++a) + (++b); }
     int e = GetTickCount();
-    printf("%d %d\n", c, e-s);
+    printf("%d %d %d\n", c, e-s, (e-s)/1000);
 }
 
 void benches(int num) {

@@ -1,15 +1,6 @@
-fn Bench
-    0 sA 0 sB
-    400000000 0 tS [ iA iB +CAB ]
-    tE -EES /ZEL
-    .C .E .Z N 
-ret
-
-fn Benches
-    0 [ Bench ]
-ret
-
-fn main
-    1000 sL 
-    3 Benches
-ret
+%B 32, ;;
+%N 10, ;;
+%C :C 0:X 0:Y \t:S C[^X^YX+Y:Z] \t-S:E Z.#B E.#B E/K.#N ;;
+%D [N*K*K #C] ;;
+1000:K 100:N
+1 #D

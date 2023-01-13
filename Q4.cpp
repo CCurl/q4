@@ -27,6 +27,7 @@
 char code[CODE_SZ], funcs[26], here;
 long data[DATA_SZ];
 long regs[128], lstk[100];
+FILE* input_fp;
 
 static char ex[256], *pc;
 static char *y, *stk[STK_SZ];
@@ -91,7 +92,7 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* ~ */ void f126() { }
 
 void (*jt[128])()={
-    XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //   0 ..  15
+    XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  NOP,  NOP,  XXX,  XXX,  NOP,  XXX,  XXX,   //   0 ..  15
     XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //  16 ..  31
     NOP,  f33,  f34,  f35,  f36,  f37,  f38,  f39,  f40,  NOP,  f42,  f43,  f44,  f45,  f46,  f47,   //  32 ..  47
     n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  f58,  f59,  f60,  f61,  f62,  f63,   //  48 ..  63
@@ -108,24 +109,26 @@ void Run(const char *x) {
 }
 void H(char *s) { /* FILE* fp = fopen("h.txt", "at"); if (fp) { fprintf(fp, "%s", s); fclose(fp); } */ }
 void Loop() {
-    printf("\nq4: ");
-    if (fgets(ex, 128, stdin) != ex) { ex[0] = '~'; }
+    char buf[256] = { 0 };
+    if (input_fp) {
+        if (fgets(buf, 128, input_fp) != buf) {
+            fclose(input_fp);
+            input_fp = NULL;
+        }
+        // if (input_fp) { printf("%s",buf); }
+    }
+    if (!input_fp) {
+        printf("\nq4: ");
+        if (fgets(buf, 128, stdin) != buf) { *buf='\\'; *(buf+1)='q'; }
+    }
     // H(ex);
-    Run(ex);
+    Run(buf);
 }
 int main(int argc, char *argv[]) {
-    //int i,j; s=sb-1; h=cb; ir=SZ-500; for (i=0; i<(SZ/4); i++) { st.i[i]=0; }
-    //st.i[0]=h; st.i[lb]=argc; for (i=1; i < argc; ++i) { y=argv[i]; t=atoi(y);
-    //    if ((t) || (y[0]=='0' && y[1]==0)) { st.i[lb+i]=t; }
-    //    else { st.i[lb+i]=ir; for (j=0; y[j]; j++) { st.b[ir++]=y[j]; } st.b[ir++]=0; } }
-    //if ((argc>1) && (argv[1][0]!='-')) { FILE *fp=fopen(argv[1], "rb"); 
-    //    if (fp) {while ((c=fgetc(fp))!=EOF) { st.b[h++]=(31<c)?c:32; } fclose(fp); st.i[0]=h; R(cb); }
-    //} 
-    here = 0; code[here++] = ';';
-    Run("%B32,;; %N10,;;");
-    Run("123:B 321+B:C B. #B C. #N");
-    Run("33:B ;BC C. #N");
-    Run("200:B 111!B B@:C B. #B C. #N");
+    // int r='B';
+    // for (i=1; i<argc; ++i) { y=argv[i]; RG[b++] = atoi(y); }
+    here = 1; code[0] = ';';
+    input_fp = fopen("src.q4", "rb");
     while (isBye == 0) { Loop(); }
     return 0;
 }
