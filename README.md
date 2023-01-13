@@ -8,22 +8,22 @@ There are 26 registers, [A-Z].
 ## Some examples: 
 ```
 - 0(this is a comment)
-- 1234 .A           0(prints "1234")
+- 1234.             0(prints "1234")
 - 'Y,               0(prints "Y")
 - M*X+B:Y           0(sets Y=M*X+B)
-- .Y                0(prints register Y)
-- %H"Hello World"$  0(define function H)
-- #H                0(call H)
-- \t:S #H \t-S .A   0(prints the elapsed time of function H)
+- Y.                0(prints register Y)
+- %H"Hello";;       0(define function H)
+- #H                0(call function H)
+- \t:S #H \t-S.     0(prints the elapsed time of function H)
 ```
 
 ## Reference
 ```
 "string"    Print "string".
-.<expr>     Print the value of <expr> as a decimal number.
-,<expr>     Print the value of <expr> as an ASCII character.
+.           Print the value of ACC as a decimal number.
+,           Output ACC as an ASCII character.
 
-%<A-Z>...$  Define function <X>.
+%<A-Z>...;; Define function <X>.
 #<A-Z>      Call function <X>.
 ;           Return from function.
 
@@ -45,8 +45,8 @@ _<A-Z>      Decrement register <X>.
 
 (<code>)    IF: If (ACC = 0), skip to next ')'.
 
-!<expr>     Store ACC to address <expr>. (eg - "X !3456" stores X to [3456])
-@<expr>     ACC = value at address <expr>. (eg = "@22" gets the value at [22])
+!<expr>     Store ACC to address <expr> (eg - "340:B X!B" stores X to [340]).
+@           ACC = value at [ACC] (eg = "200@" gets the value at [200]).
 
 [           FOR LOOP: Set <count> = ACC. Initialize \i to 0.
 \i          Iteration counter of the current FOR loop (range: 0 to <expr>-1).
@@ -56,6 +56,6 @@ _<A-Z>      Decrement register <X>.
 }           End WHILE loop. If (ACC != 0), jump back to the beginning.
 
 \t          ACC = current clock() value.
-\u          Unwind the current FOR or WHILE loop.
+\u          Unwind the loop stack (use "(\u;)" to exit early from a loop).
 \q          Exit Q4.
 ```

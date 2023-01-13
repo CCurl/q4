@@ -50,8 +50,10 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* " */ void f34() { while (*pc!='"') { putchar(*(pc++)); } ++pc; }
 /* # */ void f35() { stk[++sp] = pc+1; pc = &code[funcs[*pc-'A']]; }
 /* $ */ void f36() { }
-/* % */ void f37() { funcs[NR-'A']=here; 
-            while (*(pc)!='$') { code[here++]=*(pc++); } code[here++]=';';
+/* % */ void f37() { funcs[NR-'A'] = here; while (*pc) {
+                if ((*pc==';') && (code[here-1]==';')) { break; }
+                else { code[here++]=*(pc++); }
+            } ++pc;
         }
 /* & */ void f38() { }
 /* ' */ void f39() { ACC = NR; }
@@ -59,9 +61,9 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* ) */ void f41() { }
 /* * */ void f42() { ACC *= expr(); }
 /* + */ void f43() { ACC += expr(); }
-/* , */ void f44() { putchar((int)expr()); }
+/* , */ void f44() { putchar((int)ACC); }
 /* - */ void f45() { ACC -= expr(); }
-/* . */ void f46() { printf("%ld", expr()); }
+/* . */ void f46() { printf("%ld", ACC); }
 /* / */ void f47() { ACC /= expr(); }
 /*0-9*/ void n09() { --pc; ACC = expr(); }
 /* : */ void f58() { RG(NR) = ACC; }
@@ -70,7 +72,7 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* = */ void f61() { ACC = (ACC == expr()) ? -1 : 0;}
 /* > */ void f62() { ACC = (ACC > expr()) ? -1 : 0;}
 /* ? */ void f63() { }
-/* @ */ void f64() { ACC = data[expr()]; }
+/* @ */ void f64() { ACC = data[ACC]; }
 /*A2Z*/ void A2Z() { ACC = RG(IR); }
 /* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(long)pc; }
 /* \ */ void f92() { t1 = NR; if (t1=='t') { ACC = clock(); }
@@ -119,11 +121,11 @@ int main(int argc, char *argv[]) {
     //if ((argc>1) && (argv[1][0]!='-')) { FILE *fp=fopen(argv[1], "rb"); 
     //    if (fp) {while ((c=fgetc(fp))!=EOF) { st.b[h++]=(31<c)?c:32; } fclose(fp); st.i[0]=h; R(cb); }
     //} 
-    here = 1;
-    Run("32:L 10:N");
-    Run("123:B 321+B :C .A ,L .C ,N");
-    Run("33:B ;BC .C ,N");
-    Run("200:B 111!B @200 .B ,L .A ,N");
+    here = 0; code[here++] = ';';
+    Run("%B32,;; %N10,;;");
+    Run("123:B 321+B:C B. #B C. #N");
+    Run("33:B ;BC C. #N");
+    Run("200:B 111!B B@:C B. #B C. #N");
     while (isBye == 0) { Loop(); }
     return 0;
 }
