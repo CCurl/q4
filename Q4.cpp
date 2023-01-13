@@ -123,7 +123,7 @@ void Loop() {
         // if (input_fp) { printf("%s",buf); }
     }
     if (!input_fp) {
-        printf("\nq4: ");
+        printf("\nq4:(%d)> ", ACC);
         if (fgets(buf, 128, stdin) != buf) { *buf='\\'; *(buf+1)='q'; }
     }
     // H(ex);
