@@ -24,17 +24,17 @@
 
 ## Some examples: 
 ```
-- 0(this is a comment)
-- 1234              0(sets ACC=1234)
-- :G                0(sets register G=ACC ... 1234)
-- G.                0(sets ACC=register G, prints ACC ... "1234")
-- 34-12             0(sets ACC=34, sets ACC=ACC-12)
-- 'Y,               0(sets ACC=89, prints the ACC ... "Y")
-- M*X+B:Y           0(sets Y=M*X+B)
-- "Hello"           0(prints "Hello")
-- ::H"Hello";;      0(define function H)
-- ^H                0(call function H)
-- xT:S ^H xT-S.     0(prints the elapsed time of function H)
+0(this is a comment)
+1234              0(sets ACC=1234)
+:G                0(sets register G=ACC ... 1234)
+G.                0(sets ACC=register G, prints ACC ... "1234")
+34-12             0(sets ACC=34, sets ACC=ACC-12)
+'Y,               0(sets ACC=89, prints the ACC ... "Y")
+M*X+B:Y           0(sets Y=M*X+B)
+"Hello"           0(prints "Hello")
+::H"Hello";;      0(define function H)
+^H                0(call function H)
+xT:S ^H xT-S.     0(prints the elapsed time of function H)
 ```
 
 ## Reference
