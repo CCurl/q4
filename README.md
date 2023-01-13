@@ -1,40 +1,43 @@
 # A register-based interpreter
 
 There are 26 registers, [A-Z].
-Register 'rA' is the "accumulator" (ACC).
+Register 'A' is the "accumulator" (ACC).
 The ACC is used to store intermediate results.
+An <expr> can be either a reference to a register or a constant.
 
-##Examples: 
+## Some examples: 
 ```
-"1234 .A" prints "1234"
+- "1234 .A" prints "1234".
+- "66," prints "B".
+- "M*X+B .A" prints the result of (M*X)+B.
+- "\t:S <work> \t-S .A" prints the elapsed time of <work>.
 ```
 
 ## Reference
 ```
-.A          Print ACC (eg - "65 .A" prints "65")
-.[A-Z]      Print r<X> (eg - "123:B .B" prints "123")
-,[A-Z]      Print r<X> as a character (eg - "65,A" prints "A")
+.<expr>     Print the value of <expr> as a decimal number.
+,<expr>     Print the value of <expr> as an ASCII character.
 
-[0-9]*      Parse the number into ACC
-[A-Z]       Copy the value of r<X> into ACC
-:[A-Z]      Copy the value of ACC into r<R>
+<0-9>*      Parse a decimal number into ACC.
+<A-Z>       Copy the value of register <X> into ACC.
+:<A-Z>      Copy the value of ACC into register <X>.
 
-+[A-Z]      ACC = ACC + r<X> (eg = "2:C 45+C .A" prints "47")
-+[0-9]*     ACC = ACC + NNNN (eg = "45:C C+2 .A" prints "47")
++<expr>     ACC = ACC + <expr>.
+-<expr>     ACC = ACC - <expr>.
+*<expr>     ACC = ACC * <expr>.
+/<expr>     ACC = ACC / <expr>.
 
--[A-Z]      ACC = ACC - r<X> (eg = "3:B 25-B .A" prints "22")
--[0-9]*     ACC = ACC - NNNN (eg = "25:B B-3 .A" prints "22")
+!<expr>     Store ACC to address <expr>. (eg - "22!3456" stores 22 to [3456])
+@<expr>     Get value at address <expr> into ACC. (eg = "@3456" gets the value at [22])
 
-*[A-Z]      ACC = ACC * r<X> (eg = "3:B 5*B  .A" prints "15")
-*[0-9]*     ACC = ACC * NNNN (eg = "5:B B*3  .A" prints "15")
+[           Begin FOR loop. Execute the loop ACC times. Initialize \i to 0.
+\i          Iteration counter of the current FOR loop (range: 0 to <expr>-1).
+]           Increment \i. If less than <expr>, jump back to the beginning.
 
-/[A-Z]      ACC = ACC / r<X> (eg = "3:C 33/C .A" prints "11")
-/[0-9]*     ACC = ACC / NNNN (eg = "33:C C/3 .A" prints "11")
+{           Begin WHILE loop.
+}           End WHILE loop. If ACC != 0, jump back to the beginning.
 
-![A-Z]      Store ACC to address r<X> (eg - "22:B 3456:B" stores 3456 to address 22)
-![0-9]      Store ACC to address NNNN (eg - "12345 !15" stores 12345 to address 15)
-@[A-Z]      Fetch value from address r<X> into ACC (eg = "33:B @B" fetches the value from address 33)
-@[0-9]      Fetch value from address NNNN into ACC (eg = "@33" fetches the value from address 33)
-
+\t          The current clock() value
+\u          Unwind the current loop.
 ~           Exit
 ```

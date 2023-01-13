@@ -15,26 +15,38 @@
 #define DATA_SZ      1000
 #define CODE_SZ     10000
 
-#define RG(x)        regs[x-'A']
-#define DST          RG('A')
+#define RG(x)        regs[x]
+#define ACC          RG('A')
 #define IR           *(pc-1)
 #define NR           *(pc++)
 
+#define L0           lstk[lsp]
+#define L1           lstk[lsp-1]
+#define L2           lstk[lsp-2]
+
 char code[CODE_SZ];
 long data[DATA_SZ];
-long regs[26], stk[STK_SZ];
+long regs[128], stk[STK_SZ], lstk[100];
 
 static char ex[256], *pc;
 static const char *y;
-static int rsp, t1, t2;
+static int rsp, lsp, t1, t2;
 
-float toFlt(int x) { return *(float*)&x; }
-int toInt(float x) { return *(int*)&x; }
-char *toNum(char *cp) { t1=*(cp++)-'0'; while (BTW(*cp,'0','9')) { t1=(t1*10)+*(cp++)-'0'; } return cp; }
+inline float toFlt(int x) { return *(float*)&x; }
+inline int toInt(float x) { return *(int*)&x; }
+
+int expr() {
+    if (BTW(*pc, '0', '9')) {
+        t1 = *(pc++) - '0';
+        while (BTW(*pc, '0', '9')) { t1 = (t1 * 10) + *(pc++) - '0'; }
+        return t1;
+    }
+    return RG(NR);
+}
 
 void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /*<33*/ void NOP() { }
-/* ! */ void f33() { if (BTW(*pc, '0', '9')) { pc = toNum(pc); } else { t1 = RG(NR); } data[t1] = DST; }
+/* ! */ void f33() { data[expr()] = ACC; }
 /* " */ void f34() { }
 /* # */ void f35() { }
 /* $ */ void f36() { }
@@ -43,41 +55,34 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* ' */ void f39() { }
 /* ( */ void f40() { }
 /* ) */ void f41() { }
-/* * */ void f42() { if (BTW(*pc,'0','9')) { pc=toNum(pc); DST*=t1; } else { DST*=RG(NR); } }
-/* + */ void f43() { if (BTW(*pc,'0','9')) { pc=toNum(pc); DST+=t1; } else { DST+=RG(NR); } }
-/* , */ void f44() { printf("%c", RG(NR)); }
-/* - */ void f45() { if (BTW(*pc,'0','9')) { pc=toNum(pc); DST-=t1; } else { DST-=RG(NR); } }
-/* . */ void f46() { printf("%d", RG(NR)); }
-/* / */ void f47() { if (BTW(*pc,'0','9')) { pc=toNum(pc); DST/=t1; } else { DST/=RG(NR); } }
-/*0-9*/ void n09() { pc = toNum(pc-1); DST = t1; }
-/* 0 */ void f48() { }
-/* 1 */ void f49() { }
-/* 2 */ void f50() { }
-/* 3 */ void f51() { }
-/* 4 */ void f52() { }
-/* 5 */ void f53() { }
-/* 6 */ void f54() { }
-/* 7 */ void f55() { }
-/* 8 */ void f56() { }
-/* 9 */ void f57() { }
-/* : */ void f58() { RG(NR) = DST; }
+/* * */ void f42() { ACC *= expr(); }
+/* + */ void f43() { ACC += expr(); }
+/* , */ void f44() { printf("%c", expr()); }
+/* - */ void f45() { ACC -= expr(); }
+/* . */ void f46() { printf("%d", expr()); }
+/* / */ void f47() { ACC /= expr(); }
+/*0-9*/ void n09() { --pc; ACC = expr(); }
+/* : */ void f58() { RG(NR) = ACC; }
 /* ; */ void f59() { t1 = NR; RG(NR) = RG(t1); }
 /* < */ void f60() { }
 /* = */ void f61() { }
 /* > */ void f62() { }
 /* ? */ void f63() { }
-/* @ */ void f64() { if (BTW(*pc, '0', '9')) { pc = toNum(pc); } else { t1 = RG(NR); } DST = data[t1]; }
-/*A2Z*/ void A2Z() { DST = RG(IR); }
-/* [ */ void f91() { }
-/* \ */ void f92() { }
-/* ] */ void f93() { }
-/* ^ */ void f94() { }
-/* _ */ void f95() { }
+/* @ */ void f64() { ACC = data[expr()]; }
+/*A2Z*/ void A2Z() { ACC = RG(IR); }
+/* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(long)pc; }
+/* \ */ void f92() { t1 = NR; if (t1=='t') { ACC = clock(); }
+            else if (t1 == 'i') { ACC = L0; }
+            else if (t1 == 'u') { lsp =- 3; }
+        }
+/* ] */ void f93() { if (++L0<L1) { pc=(char *)L2; } else { lsp-=3; } }
+/* ^ */ void f94() { ++RG(NR); }
+/* _ */ void f95() { --RG(NR); }
 /* ` */ void f96() { }
 /*a-z*/ void a2z() { t1 = IR; printf("-call (%c)-", t1); }
-/* { */ void f123() { }
+/* { */ void f123() { lsp += 3; L0 = (long)pc; }
 /* | */ void f124() { }
-/* } */ void f125() { }
+/* } */ void f125() { if (ACC) { pc = (char*)L0; } else { lsp -= 3; } }
 /* ~ */ void f126() { printf("bye."); exit(0); }
 
 void (*jt[128])()={
@@ -92,13 +97,13 @@ void (*jt[128])()={
 };
 
 void R(const char *x) {
-    rsp = 0;
+    rsp = lsp = 0;
     pc = (char *)x;
     while (pc) { jt[*(pc++)](); }
 }
 void H(char *s) { /* FILE* fp = fopen("h.txt", "at"); if (fp) { fprintf(fp, "%s", s); fclose(fp); } */ }
 void L() {
-    printf(" (ok)\npg: "); // f37(); printf(")>"); 
+    printf("\nq4: ");
     fgets(ex, 128, stdin); H(ex); R(ex);
 }
 int main(int argc, char *argv[]) {
