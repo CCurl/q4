@@ -1,9 +1,9 @@
 # A register-based interpreter
 
 There are 26 registers, [A-Z].
-Register 'A' is the "accumulator" (ACC).
-The ACC is used to store intermediate results.
-An <expr> can be either a reference to a register or a constant.
+- Register 'A' is the "accumulator" (ACC).
+- The ACC is used to store intermediate results.
+- An <expr> can be either a reference to a register or a constant.
 
 ## Some examples: 
 ```
