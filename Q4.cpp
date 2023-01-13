@@ -16,7 +16,7 @@
 #define CODE_SZ     10000
 
 #define RG(x)        regs[x]
-#define ACC          RG('A')
+#define ACC          RG('a')
 #define IR           *(pc-1)
 #define NR           *(pc++)
 
