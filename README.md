@@ -1,20 +1,40 @@
-# A register-based interpreter
+# Q4 - A fast register-based interpreter
 
-There are 26 registers, [A-Z].
-- Register 'A' is the "accumulator" (ACC).
-- The ACC is used to store intermediate results.
-- An <expr> can be either a reference to a register or a constant.
+## Registers
+- Register 'a' is the "accumulator" (ACC).
+- There are two types of registers: first-class and second-class.
+- There are 26 first-class registers, [A-Z].
+- All other characters are "second-class" registers.
+- For example, (e, x, $, %, and _) are all second-class registers.
+- This is just a lucky side-effect of the way Q4 is implemented.
+- Only first-class registers can come before an operator (start things off).
+- Both can be set from the ACC and come after an operator.
+
+## Expressions
+- An <expr> can be either a register (first or second class), or a constant.
+- For example: (A, x, _, and 1234) are all valid expressions.
+
+## Operations
+- A constant or a first-class register can be used to initialize the ACC.
+- Simply specifying one sets the ACC (eg - X or 3345).
+- Operations that take 1 parameter act on ACC.
+- Operations that take 2 parameters use ACC on the left and <expr> on the right.
+- For example: F-3 sets ACC to F, then subtracts 3 from ACC.
+- Operations can be chained (eg - M*X+B).
 
 ## Some examples: 
 ```
 - 0(this is a comment)
-- 1234.             0(prints "1234")
-- 'Y,               0(prints "Y")
+- 1234              0(sets ACC=1234)
+- :G                0(sets register G=ACC ... 1234)
+- G.                0(sets ACC=register G, prints ACC ... "1234")
+- 34-12             0(sets ACC=34, sets ACC=ACC-12)
+- 'Y,               0(sets ACC=89, prints the ACC ... "Y")
 - M*X+B:Y           0(sets Y=M*X+B)
-- Y.                0(prints register Y)
-- %H"Hello";;       0(define function H)
-- #H                0(call function H)
-- xT:S #H xT-S.     0(prints the elapsed time of function H)
+- "Hello"           0(prints "Hello")
+- ::H"Hello";;      0(define function H)
+- ^H                0(call function H)
+- xT:S ^H xT-S.     0(prints the elapsed time of function H)
 ```
 
 ## Reference
@@ -25,15 +45,15 @@ There are 26 registers, [A-Z].
 '<char>     Set ACC to the ASCII value for <char>
 
 ::<X>...;;  Define function <X>.
-_<X>        Call function <X>.
+^<X>        Call function <X>.
 ;           Return from function.
 
 <0-9>*      Parse a decimal number into ACC.
-<A-Z>       Copy the value of register <X> into ACC.
-:<A-Z>      Copy the value of ACC into register <X>.
+<A-Z>       Set ACC = register <X>.
+:<A-z>      Set register <X> = ACC.
 
-++<A-Z>     Increment register <X>.
---<A-Z>     Decrement register <X>.
+++<A-z>     Increment register <X>.
+--<A-z>     Decrement register <X>.
 
 +<expr>     ACC = ACC + <expr>.
 -<expr>     ACC = ACC - <expr>.
