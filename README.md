@@ -7,10 +7,14 @@ There are 26 registers, [A-Z].
 
 ## Some examples: 
 ```
-- "1234 .A" prints "1234".
-- "66," prints "B".
-- "M*X+B .A" prints the result of (M*X)+B.
-- "\t:S <work> \t-S .A" prints the elapsed time of <work>.
+- 0(this is a comment)
+- 1234 .A           0(prints "1234")
+- 'Y,               0(prints "Y")
+- M*X+B:Y           0(sets Y=M*X+B)
+- .Y                0(prints register Y)
+- %H"Hello World"$  0(define function H)
+- #H                0(call H)
+- \t:S #H \t-S .A   0(prints the elapsed time of function H)
 ```
 
 ## Reference
@@ -41,8 +45,8 @@ _<A-Z>      Decrement register <X>.
 
 (<code>)    IF: If (ACC = 0), skip to next ')'.
 
-!<expr>     Store ACC to address <expr>. (eg - "22!3456" stores 22 to [3456])
-@<expr>     Get value at address <expr> into ACC. (eg = "@3456" gets the value at [22])
+!<expr>     Store ACC to address <expr>. (eg - "X !3456" stores X to [3456])
+@<expr>     ACC = value at address <expr>. (eg = "@22" gets the value at [22])
 
 [           FOR LOOP: Set <count> = ACC. Initialize \i to 0.
 \i          Iteration counter of the current FOR loop (range: 0 to <expr>-1).
@@ -51,7 +55,7 @@ _<A-Z>      Decrement register <X>.
 {           WHILE LOOP: Begin.
 }           End WHILE loop. If (ACC != 0), jump back to the beginning.
 
-\t          The current clock() value
+\t          ACC = current clock() value.
 \u          Unwind the current FOR or WHILE loop.
-~           Exit
+\q          Exit Q4.
 ```
