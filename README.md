@@ -1,25 +1,27 @@
-# Q4 - A fast register-based interpreter
+# Q4 - A fast register-based interpreter/VM
 
 ## Paradigm
 Q4 is a register-based system. For Q4, this means:
-- There is an "accumulator" register (ACC).
-- The ACC is similar to TOS in a stack-based system.
-- A constant sets the ACC.
-- Naming a first-class register sets the ACC.
-- If an operation results in a value, that value goes into the ACC.
+- There is an "accumulator" register, called ACC.
+- The ACC is somewhat similar to TOS in a stack-based system.
+- Naming a first-class register or specifying a constant sets the ACC.
+- Operations may use and/or set the ACC.
+- Operations can be chained.
+
+There is no compilation in Q4. The source code is executed directly.
 
 ## Registers
 There are two types of registers, first-class and second-class:
 - The first-class registers are (A-Z).
 - The second-class registers are (a-z).
 - Naming a first-class register sets the ACC.
-- Both types can be set and can come after an operator (":<x>" or "+<a>").
+- Both types can be set and can come after an operator (eg - ":<x>" or "+<a>").
 
 ## Operations
 An operation can take 0, 1 or 2 operands:
-- If an operation takes no operands just do whatever they do (eg - '"' or ';').
-- If an operation takes one operand use the ACC for that operand (eg - '.' or ',').
-- If an operation takes two operands use the ACC and (expr) (eg - '*' or '=').
+- If an operation takes no operands, it just does whatever it does (eg - '"' or ';').
+- If an operation takes one operand, the ACC is the operand (eg - '.' or '[').
+- If an operation takes two operands, the ACC and (expr) are they (eg - '*' or '=').
 - If an operation results in a value, that value goes into the ACC.
 - Operations can be chained (eg - M*X+B:Y).
 
@@ -46,17 +48,18 @@ xT:S ^H xT-S.     0(prints the elapsed time of function H)
 "string"    Print "string".
 .           Output the ACC as a decimal number.
 ,           Output the ACC as an ASCII character.
-'(c)        Set the ACC to the ASCII value of (c)
 
 ::<X>...;;  Define function <X>.
 ^<X>        Call function <X>.
 ;           Return from function.
 
 [0-9]*      Parse a decimal number into ACC.
+'(c)        Set the ACC to the ASCII value of (c).
 [A-Z]       Set ACC = register[X].
+
 :[A-z]      Set register[X] = ACC.
 
-s+          Push ACC to the the stack.
+s+          Push ACC onto the stack.
 s-          Pop ACC from the stack.
 s@          Copy TOS to the ACC.
 
@@ -67,6 +70,7 @@ s@          Copy TOS to the ACC.
 -(expr)     ACC = ACC - (expr).
 *(expr)     ACC = ACC * (expr).
 /(expr)     ACC = ACC / (expr).
+
 
 <(expr)     ACC = (ACC < (expr)) ? -1 : 0.
 =(expr)     ACC = (ACC = (expr)) ? -1 : 0.
