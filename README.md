@@ -3,23 +3,24 @@
 ## Paradigm
 Q4 uses an "accumulator" (ACC). This is similar to TOS in a stack-based system.
 
-There are two types of registers: first-class and second-class.
+A constant by itself sets the ACC.
+
+There are two types of registers, first-class and second-class:
 - The first-class registers are (A-Z).
 - The second-class registers are (a-z).
 - Naming a first-class register sets the ACC.
-- Both types can be set and can come after an operator (:<x> or +<b>).
-A constant by itself sets the ACC.
+- Both types can be set and can come after an operator (":<x>" or "+<a>").
 
 ## Operations
-Operations take either 0, 1 or 2 operands.
-- Operations that take a no operands use just do whatever they do (eg - '"' or ';').
-- Operations that take a one operand use the ACC for that operand (eg - '.' or ',').
-- Operations that take a two operands use the ACC and <expr>      (eg - '*' or '=').
+An operation takes either 0, 1 or 2 operands:
+- Operations that take no operands just do whatever they do (eg - '"' or ';').
+- Operations that take one operand use the ACC for that operand (eg - '.' or ',').
+- Operations that take two operands use the ACC and <expr> (eg - '*' or '=').
 - If an operation results in a value, that value goes into the ACC.
 - Operations can be chained (eg - M*X+B:Y).
 
 ## Expressions
-An <expr> can be either a register (first or second class), or a constant.
+An (expr) can be either a register (first or second class), or a constant.
 
 ## Some examples: 
 ```
