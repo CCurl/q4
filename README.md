@@ -16,10 +16,10 @@ There are two types of registers, first-class and second-class:
 - Both types can be set and can come after an operator (":<x>" or "+<a>").
 
 ## Operations
-An operation takes either 0, 1 or 2 operands:
-- Operations that take no operands just do whatever they do (eg - '"' or ';').
-- Operations that take one operand use the ACC for that operand (eg - '.' or ',').
-- Operations that take two operands use the ACC and (expr) (eg - '*' or '=').
+An operation can take 0, 1 or 2 operands:
+- If an operation takes no operands just do whatever they do (eg - '"' or ';').
+- If an operation takes one operand use the ACC for that operand (eg - '.' or ',').
+- If an operation takes two operands use the ACC and (expr) (eg - '*' or '=').
 - If an operation results in a value, that value goes into the ACC.
 - Operations can be chained (eg - M*X+B:Y).
 
@@ -31,7 +31,7 @@ An (expr) can be either a register (first or second class), or a constant.
 0(this is a comment)
 1234              0(sets ACC=1234)
 :G                0(sets register G=ACC ... 1234)
-X.                0(sets ACC=register X, prints ACC as a decimal)
+C.                0(sets ACC=register C, prints ACC as a decimal)
 34-12             0(sets ACC=34, sets ACC=ACC-12)
 'Y,               0(sets ACC=89, prints the ACC ... "Y")
 M*X+B:Y           0(sets Y=M*X+B)
@@ -44,24 +44,24 @@ xT:S ^H xT-S.     0(prints the elapsed time of function H)
 ## Reference
 ```
 "string"    Print "string".
-.           Print the value of ACC as a decimal number.
-,           Output ACC as an ASCII character.
-'<char>     Set ACC to the ASCII value for <char>
+.           Output the ACC as a decimal number.
+,           Output the ACC as an ASCII character.
+'(c)        Set the ACC to the ASCII value of (c)
 
 ::<X>...;;  Define function <X>.
 ^<X>        Call function <X>.
 ;           Return from function.
 
 [0-9]*      Parse a decimal number into ACC.
-<A-Z>       Set ACC = register <X>.
-:<A-z>      Set register <X> = ACC.
+[A-Z]       Set ACC = register[X].
+:[A-z]      Set register[X] = ACC.
 
 s+          Push ACC to the the stack.
 s-          Pop ACC from the stack.
 s@          Copy TOS to the ACC.
 
-++<A-z>     Increment register <X>.
---<A-z>     Decrement register <X>.
+++[A-z]     Increment register[X].
+--[A-z]     Decrement register[X].
 
 +(expr)     ACC = ACC + (expr).
 -(expr)     ACC = ACC - (expr).
