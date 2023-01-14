@@ -87,7 +87,7 @@ void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* _ */ void f95() { }
 /* ` */ void f96() { }
 /* i */ void f105() { ACC = L0; }
-/* r */ void f114() { t1=NR; if (t1=='+') { stk[++sp]=(char*)ACC; } 
+/* s */ void f115() { t1=NR; if (t1=='+') { stk[++sp]=(char*)ACC; } 
             else if (t1=='@') { ACC=(cell_t)stk[sp]; }
             else if (t1=='-') { ACC=(cell_t)stk[sp--]; } }
 /* x */ void f120() { t1 = NR; if (t1=='T') { ACC = clock(); }
@@ -109,7 +109,7 @@ void (*jt[128])()={
     f64,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,   //  64 ..  79
     A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  f91,  f92,  f93,  f94,  f95,   //  80 ..  95
     f96,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  f105, XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //  96 .. 111
-    XXX,  XXX,  f114, XXX,  XXX,  XXX,  XXX,  XXX,  f120, XXX,  XXX,  f123, f124, f125, f126, XXX    // 112 .. 127
+    XXX,  XXX,  XXX,  f115, XXX,  XXX,  XXX,  XXX,  f120, XXX,  XXX,  f123, f124, f125, f126, XXX    // 112 .. 127
 };
 
 void Run(const char *x) {

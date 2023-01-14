@@ -1,10 +1,14 @@
 # Q4 - A fast register-based interpreter
 
 ## Paradigm
-Q4 uses an "accumulator" (ACC). This is similar to TOS in a stack-based system.
+Q4 is a register-based system. For Q4, this means:
+- There is an "accumulator" register (ACC).
+- The ACC is similar to TOS in a stack-based system.
+- A constant sets the ACC.
+- Naming a first-class register sets the ACC.
+- If an operation results in a value, that value goes into the ACC.
 
-A constant by itself sets the ACC.
-
+## Registers
 There are two types of registers, first-class and second-class:
 - The first-class registers are (A-Z).
 - The second-class registers are (a-z).
@@ -15,7 +19,7 @@ There are two types of registers, first-class and second-class:
 An operation takes either 0, 1 or 2 operands:
 - Operations that take no operands just do whatever they do (eg - '"' or ';').
 - Operations that take one operand use the ACC for that operand (eg - '.' or ',').
-- Operations that take two operands use the ACC and <expr> (eg - '*' or '=').
+- Operations that take two operands use the ACC and (expr) (eg - '*' or '=').
 - If an operation results in a value, that value goes into the ACC.
 - Operations can be chained (eg - M*X+B:Y).
 
@@ -52,17 +56,17 @@ xT:S ^H xT-S.     0(prints the elapsed time of function H)
 <A-Z>       Set ACC = register <X>.
 :<A-z>      Set register <X> = ACC.
 
-r+          Push ACC to the return stack.
-r-          Pop ACC from return stack.
-r@          Copy ACC from return stack.
+s+          Push ACC to the the stack.
+s-          Pop ACC from the stack.
+s@          Copy TOS to the ACC.
 
 ++<A-z>     Increment register <X>.
 --<A-z>     Decrement register <X>.
 
-+<expr>     ACC = ACC + <expr>.
--<expr>     ACC = ACC - <expr>.
-*<expr>     ACC = ACC * <expr>.
-/<expr>     ACC = ACC / <expr>.
++(expr)     ACC = ACC + (expr).
+-(expr)     ACC = ACC - (expr).
+*(expr)     ACC = ACC * (expr).
+/(expr)     ACC = ACC / (expr).
 
 <(expr)     ACC = (ACC < (expr)) ? -1 : 0.
 =(expr)     ACC = (ACC = (expr)) ? -1 : 0.
@@ -70,11 +74,11 @@ r@          Copy ACC from return stack.
 
 (<code>)    IF: If (ACC = 0), skip to next ')'.
 
-!<expr>     Store ACC to address <expr> (eg - "340:B X!B" stores X to [340]).
+!(expr)     Store ACC to address (expr) (eg - "340:B X!B" stores X to [340]).
 @           ACC = value at [ACC] (eg = "200@" gets the value at [200]).
 
 [           FOR LOOP: Set <count> = ACC. Initialize i to 0.
-i           Iteration counter of the current FOR loop (range: 0 to <expr>-1).
+i           Iteration counter of the current FOR loop (range: 0 to (expr)-1).
 ]           Increment i. If (i < <count>), jump back to the beginning.
 
 {           WHILE LOOP: Begin.
