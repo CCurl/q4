@@ -14,16 +14,17 @@ typedef long cell_t;
 #define LSTK_SZ        32
 #define DATA_SZ     10000
 #define CODE_SZ      1000
-#define REGS_SZ       128
-#define FUNCS_SZ       26
-
-#define RG(x)        regs[(x)]
-#define ACC_REG      'a'
-#define ACC          regs[ACC_REG]
-#define IR           *(pc-1)
-#define NR           *(pc++)
+#define REGS_SZ     'z'-'A'+1
+#define FUNCS_SZ    'Z'-'A'+1
 
 #define BTW(a,b,c) ((b<=a) && (a<=c))
+
+#define ACC          acc
+#define RG(x)        regs[(x)-'A']
+
+#define PC           *(pc)
+#define IR           *(pc-1)
+#define NR           *(pc++)
 
 #define L0           lstk[lsp]
 #define L1           lstk[lsp-1]
@@ -32,43 +33,44 @@ typedef long cell_t;
 
 cell_t regs[REGS_SZ], data[DATA_SZ], funcs[FUNCS_SZ], lstk[LSTK_SZ+1];
 char code[CODE_SZ], *stk[STK_SZ], *pc, ex[32], isBye;
-cell_t here, sp, lsp, t1, t2;
+cell_t acc, here, sp, lsp, t1, t2;
 FILE* input_fp;
 
 inline float toFlt(int x) { return *(float*)&x; }
 inline int toInt(float x) { return *(int*)&x; }
 
 long expr() {
-    if (BTW(*pc, '0', '9')) {
-        t1 = *(pc++) - '0';
-        while (BTW(*pc, '0', '9')) { t1 = (t1 * 10) + *(pc++) - '0'; }
+    if (BTW(PC, '0', '9')) {
+        t1 = NR - '0';
+        while (BTW(PC, '0', '9')) { t1 = (t1 * 10) + NR - '0'; }
         return t1;
     }
+    // if (PC=='\'') { ++pc; return NR; } -- TOO SLOW!
     return RG(NR);
 }
 
-void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
+void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /*<33*/ void NOP() { }
 /* ! */ void f33() { data[expr()] = ACC; }
-/* " */ void f34() { while (*pc!='"') { putchar(*(pc++)); } ++pc; }
+/* " */ void f34() { while (PC!='"') { putchar(NR); } ++pc; }
 /* # */ void f35() { }
 /* $ */ void f36() { }
 /* % */ void f37() { }
 /* & */ void f38() { }
 /* ' */ void f39() { ACC = NR; }
-/* ( */ void f40() { if (!ACC) { while (*(pc++) != ')') { ; } } }
+/* ( */ void f40() { if (!ACC) { while (NR != ')') { ; } } }
 /* ) */ void f41() { }
 /* * */ void f42() { ACC *= expr(); }
-/* + */ void f43() { if (*pc == '+') { ++pc; ++RG(NR); } else { ACC += expr(); } }
+/* + */ void f43() { if (PC == '+') { ++pc; ++RG(NR); } else { ACC += expr(); } }
 /* , */ void f44() { putchar((int)ACC); }
-/* - */ void f45() { if (*pc == '-') { ++pc; ++RG(NR); } else { ACC -= expr(); } }
+/* - */ void f45() { if (PC == '-') { ++pc; --RG(NR); } else { ACC -= expr(); } }
 /* . */ void f46() { printf("%ld", (long)ACC); }
 /* / */ void f47() { ACC /= expr(); }
 /*0-9*/ void n09() { --pc; ACC = expr(); }
-/* : */ void f58() { if (*pc != ':') { RG(NR) = ACC; return; }
-            ++pc; funcs[NR-'A'] = here; while (*pc) {
-                if ((*pc==';') && (code[here-1]==';')) { break; }
-                else { code[here++]=*(pc++); }
+/* : */ void f58() { if (PC != ':') { RG(NR) = ACC; return; }
+            ++pc; funcs[NR-'A'] = here; while (PC) {
+                if ((PC==';') && (code[here-1]==';')) { break; }
+                else { code[here++]=NR; }
             } ++pc;
         }
 /* ; */ void f59() { if (0 < sp) { pc = stk[sp--]; } else { sp = 0; pc = 0; } }
@@ -81,7 +83,7 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(cell_t)pc; }
 /* \ */ void f92() { }
 /* ] */ void f93() { if (++L0<L1) { pc=(char *)L2; } else { LU; } }
-/* ^ */ void f94() { stk[++sp]=pc+1; pc=&code[funcs[*pc-'A']]; return; }
+/* ^ */ void f94() { stk[++sp]=pc+1; pc=&code[funcs[PC-'A']]; return; }
 /* _ */ void f95() { }
 /* ` */ void f96() { }
 /* i */ void f105() { ACC = L0; }
@@ -113,7 +115,7 @@ void (*jt[128])()={
 void Run(const char *x) {
     sp = lsp = 0;
     pc = (char *)x;
-    while (pc) { jt[*(pc++)](); }
+    while (pc) { jt[NR](); }
 }
 void Loop() {
     char buf[128] = { 0 };

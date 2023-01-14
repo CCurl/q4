@@ -2,5 +2,4 @@
 ::F Y.xB E.xB E/K.xN ;;
 ::C r+ xT:S r-[M*X+B:Y] ^E^F ;;
 ::D :C C<1(1:C) C>3(3:C) C[N*K*K ^C] ;;
-1000:K 100:N
-3 ^D
+1000:K 50:N 2 ^D

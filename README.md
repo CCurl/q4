@@ -1,33 +1,32 @@
 # Q4 - A fast register-based interpreter
 
-## Registers
-- Register 'a' is the "accumulator" (ACC).
-- There are two types of registers: first-class and second-class.
-- There are 26 first-class registers, [A-Z].
-- All other characters are "second-class" registers.
-- For example, (e, x, $, %, and _) are all second-class registers.
-- This is just a lucky side-effect of the way Q4 is implemented.
-- Only first-class registers can come before an operator (start things off).
-- Both can be set from the ACC and come after an operator.
+## Paradigm
+Q4 uses an "accumulator" (ACC). This is similar to TOS in a stack-based system.
 
-## Expressions
-- An <expr> can be either a register (first or second class), or a constant.
-- For example: (A, x, _, and 1234) are all valid expressions.
+There are two types of registers: first-class and second-class.
+- The first-class registers are (A-Z).
+- The second-class registers are (a-z).
+- Naming a first-class register sets the ACC.
+- Both types can be set and can come after an operator (:<x> or +<b>).
+A constant by itself sets the ACC.
 
 ## Operations
-- A constant or a first-class register can be used to initialize the ACC.
-- Simply specifying one sets the ACC (eg - X or 3345).
-- Operations that take 1 parameter act on ACC.
-- Operations that take 2 parameters use ACC on the left and <expr> on the right.
-- For example: F-3 sets ACC to F, then subtracts 3 from ACC.
-- Operations can be chained (eg - M*X+B).
+Operations take either 0, 1 or 2 operands.
+- Operations that take a no operands use just do whatever they do (eg - '"' or ';').
+- Operations that take a one operand use the ACC for that operand (eg - '.' or ',').
+- Operations that take a two operands use the ACC and <expr>      (eg - '*' or '=').
+- If an operation results in a value, that value goes into the ACC.
+- Operations can be chained (eg - M*X+B:Y).
+
+## Expressions
+An <expr> can be either a register (first or second class), or a constant.
 
 ## Some examples: 
 ```
 0(this is a comment)
 1234              0(sets ACC=1234)
 :G                0(sets register G=ACC ... 1234)
-G.                0(sets ACC=register G, prints ACC ... "1234")
+X.                0(sets ACC=register X, prints ACC as a decimal)
 34-12             0(sets ACC=34, sets ACC=ACC-12)
 'Y,               0(sets ACC=89, prints the ACC ... "Y")
 M*X+B:Y           0(sets Y=M*X+B)
@@ -48,12 +47,12 @@ xT:S ^H xT-S.     0(prints the elapsed time of function H)
 ^<X>        Call function <X>.
 ;           Return from function.
 
-<0-9>*      Parse a decimal number into ACC.
+[0-9]*      Parse a decimal number into ACC.
 <A-Z>       Set ACC = register <X>.
 :<A-z>      Set register <X> = ACC.
 
-r+          Push ACC onto return stack.
-r-          Pop ACC off of return stack.
+r+          Push ACC to the return stack.
+r-          Pop ACC from return stack.
 r@          Copy ACC from return stack.
 
 ++<A-z>     Increment register <X>.
