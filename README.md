@@ -52,6 +52,10 @@ xT:S ^H xT-S.     0(prints the elapsed time of function H)
 <A-Z>       Set ACC = register <X>.
 :<A-z>      Set register <X> = ACC.
 
+r+          Push ACC onto return stack.
+r-          Pop ACC off of return stack.
+r@          Copy ACC from return stack.
+
 ++<A-z>     Increment register <X>.
 --<A-z>     Decrement register <X>.
 

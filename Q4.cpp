@@ -1,37 +1,39 @@
-// S2.c - inspired by Sandor Schneider's STABLE (https://w3group.de/stable.html)
+// Q4.cpp - a fast register-based interpreter
 
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <time.h>
-#define BTW(a,b,c) ((b<=a) && (a<=c))
 
-#define R0 rtos
-#define R1 rstk[rsp]
+typedef long cell_t;
 
-#define STK_SZ         64
-#define DATA_SZ      1000
-#define CODE_SZ     10000
+#define STK_SZ         32
+#define LSTK_SZ        32
+#define DATA_SZ     10000
+#define CODE_SZ      1000
+#define REGS_SZ       128
+#define FUNCS_SZ       26
 
-#define RG(x)        regs[x]
-#define ACC          RG('a')
+#define RG(x)        regs[(x)]
+#define ACC_REG      'a'
+#define ACC          regs[ACC_REG]
 #define IR           *(pc-1)
 #define NR           *(pc++)
+
+#define BTW(a,b,c) ((b<=a) && (a<=c))
 
 #define L0           lstk[lsp]
 #define L1           lstk[lsp-1]
 #define L2           lstk[lsp-2]
+#define LU           lsp = (lsp<3) ? 0 : (lsp-3)
 
-char code[CODE_SZ], funcs[26], here;
-long data[DATA_SZ];
-long regs[128], lstk[100];
+cell_t regs[REGS_SZ], data[DATA_SZ], funcs[FUNCS_SZ], lstk[LSTK_SZ+1];
+char code[CODE_SZ], *stk[STK_SZ], *pc, ex[32], isBye;
+cell_t here, sp, lsp, t1, t2;
 FILE* input_fp;
-
-static char ex[256], *pc;
-static char *y, *stk[STK_SZ];
-static int sp, lsp, t1, t2, isBye;
 
 inline float toFlt(int x) { return *(float*)&x; }
 inline int toInt(float x) { return *(int*)&x; }
@@ -51,7 +53,7 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* " */ void f34() { while (*pc!='"') { putchar(*(pc++)); } ++pc; }
 /* # */ void f35() { }
 /* $ */ void f36() { }
-/* & */ void f37() { }
+/* % */ void f37() { }
 /* & */ void f38() { }
 /* ' */ void f39() { ACC = NR; }
 /* ( */ void f40() { if (!ACC) { while (*(pc++) != ')') { ; } } }
@@ -60,7 +62,7 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* + */ void f43() { if (*pc == '+') { ++pc; ++RG(NR); } else { ACC += expr(); } }
 /* , */ void f44() { putchar((int)ACC); }
 /* - */ void f45() { if (*pc == '-') { ++pc; ++RG(NR); } else { ACC -= expr(); } }
-/* . */ void f46() { printf("%ld", ACC); }
+/* . */ void f46() { printf("%ld", (long)ACC); }
 /* / */ void f47() { ACC /= expr(); }
 /*0-9*/ void n09() { --pc; ACC = expr(); }
 /* : */ void f58() { if (*pc != ':') { RG(NR) = ACC; return; }
@@ -76,24 +78,25 @@ void XXX() { if (IR && (IR!=10)) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* ? */ void f63() { }
 /* @ */ void f64() { ACC = data[ACC]; }
 /*A2Z*/ void A2Z() { ACC = RG(IR); }
-/* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(long)pc; }
+/* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(cell_t)pc; }
 /* \ */ void f92() { }
-/* ] */ void f93() { if (++L0<L1) { pc=(char *)L2; } else { lsp-=3; } }
+/* ] */ void f93() { if (++L0<L1) { pc=(char *)L2; } else { LU; } }
 /* ^ */ void f94() { stk[++sp]=pc+1; pc=&code[funcs[*pc-'A']]; return; }
 /* _ */ void f95() { }
 /* ` */ void f96() { }
-/* d */ void f100() { }
 /* i */ void f105() { ACC = L0; }
-/*a-z*/ void a2z() { }
+/* r */ void f114() { t1=NR; if (t1=='+') { stk[++sp]=(char*)ACC; } 
+            else if (t1=='@') { ACC=(cell_t)stk[sp]; }
+            else if (t1=='-') { ACC=(cell_t)stk[sp--]; } }
 /* x */ void f120() { t1 = NR; if (t1=='T') { ACC = clock(); }
             else if (t1 == 'B') { putchar(' '); }
             else if (t1 == 'N') { putchar(10); }
-            else if (t1 == 'U') { lsp =- 3; }
+            else if (t1 == 'U') { LU; }
             else if (t1 == 'Q') { isBye = 1; }
         }
-/* { */ void f123() { lsp += 3; L0 = (long)pc; }
+/* { */ void f123() { lsp += 3; L0 = (cell_t)pc; }
 /* | */ void f124() { }
-/* } */ void f125() { if (ACC) { pc = (char*)L0; } else { lsp -= 3; } }
+/* } */ void f125() { if (ACC) { pc = (char*)L0; } else { LU; } }
 /* ~ */ void f126() { }
 
 void (*jt[128])()={
@@ -103,8 +106,8 @@ void (*jt[128])()={
     n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  f58,  f59,  f60,  f61,  f62,  f63,   //  48 ..  63
     f64,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,   //  64 ..  79
     A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  f91,  f92,  f93,  f94,  f95,   //  80 ..  95
-    f96,  a2z,  a2z,  a2z,  f100, a2z,  a2z,  a2z,  a2z,  f105, a2z,  a2z,  a2z,  a2z,  a2z,  a2z,   //  96 .. 111
-    a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  a2z,  f120, a2z,  a2z,  f123, f124, f125, f126, XXX    // 112 .. 127
+    f96,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  f105, XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //  96 .. 111
+    XXX,  XXX,  f114, XXX,  XXX,  XXX,  XXX,  XXX,  f120, XXX,  XXX,  f123, f124, f125, f126, XXX    // 112 .. 127
 };
 
 void Run(const char *x) {
@@ -112,21 +115,19 @@ void Run(const char *x) {
     pc = (char *)x;
     while (pc) { jt[*(pc++)](); }
 }
-void H(char *s) { /* FILE* fp = fopen("h.txt", "at"); if (fp) { fprintf(fp, "%s", s); fclose(fp); } */ }
 void Loop() {
-    char buf[256] = { 0 };
+    char buf[128] = { 0 };
     if (input_fp) {
-        if (fgets(buf, 128, input_fp) != buf) {
+        if (fgets(buf, sizeof(buf), input_fp) != buf) {
             fclose(input_fp);
             input_fp = NULL;
         }
-        // if (input_fp) { printf("%s",buf); }
     }
     if (!input_fp) {
-        printf("\nq4:(%d)> ", ACC);
-        if (fgets(buf, 128, stdin) != buf) { *buf='\\'; *(buf+1)='q'; }
+        // putchar('\n'); putchar('q'); putchar('4'); putchar('>');
+        printf("\nq4:(%ld)> ", (long)ACC);
+        if (fgets(buf, sizeof(buf), stdin) != buf) { isBye=1; return; }
     }
-    // H(ex);
     Run(buf);
 }
 int main(int argc, char *argv[]) {

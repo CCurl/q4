@@ -1,3 +1,3 @@
-rm Q4
-gcc -m32 -O3 -oQ4 Q4.cpp
-ls -l Q4
+rm q4
+gcc -m32 -O3 -oq4 Q4.cpp
+ls -l q4
