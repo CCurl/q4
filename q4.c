@@ -138,6 +138,83 @@ void Run(const char *x) {
     pc = (char *)x;
     while (pc) { jt[NR](); }
 }
+
+#define NEXT goto next
+void Run2(const char* x) {
+    sp = lsp = 0;
+    pc = (char*)x;
+next:
+    switch (NR) {
+    case '!': NEXT;
+    case '"': NEXT;
+    case '#': NEXT;
+    case '$': NEXT;
+    case '%': NEXT;
+    case '&': NEXT;
+    case '\'': NEXT;
+    case '(': NEXT;
+    case ')': NEXT;
+    case '*': NEXT;
+    case '+': NEXT;
+    case ',': NEXT;
+    case '-': NEXT;
+    case '.': NEXT;
+    case '/': NEXT;
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+        NEXT;
+    case ':': NEXT;
+    case ';': NEXT;
+    case '<': NEXT;
+    case '=': NEXT;
+    case '>': NEXT;
+    case '?': NEXT;
+    case '@': NEXT;
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':
+    case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
+    case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U':
+    case 'V': case 'W': case 'X': case 'Y': case 'Z': t1 = IR;
+        NEXT;
+    case '[': NEXT;
+    case '\\': NEXT;
+    case ']': NEXT;
+    case '^': NEXT;
+    case '_': NEXT;
+    case '`': NEXT;
+    case 'a': NEXT;
+    case 'b': NEXT;
+    case 'c': NEXT;
+    case 'd': NEXT;
+    case 'e': NEXT;
+    case 'f': NEXT;
+    case 'g': NEXT;
+    case 'h': NEXT;
+    case 'i': NEXT;
+    case 'j': NEXT;
+    case 'k': NEXT;
+    case 'l': NEXT;
+    case 'm': NEXT;
+    case 'n': NEXT;
+    case 'o': NEXT;
+    case 'p': NEXT;
+    case 'q': NEXT;
+    case 'r': NEXT;
+    case 's': NEXT;
+    case 't': NEXT;
+    case 'u': NEXT;
+    case 'v': NEXT;
+    case 'w': NEXT;
+    case 'x': NEXT;
+    case 'y': NEXT;
+    case 'z': NEXT;
+    case '{': NEXT;
+    case '|': NEXT;
+    case '}': NEXT;
+    case '~': NEXT;
+    default: if (IR == ' ') NEXT;
+    }
+}
+
 void Loop() {
     char *y = here;
     int sz = &BYTES(MEM_SZ)-y-1;
