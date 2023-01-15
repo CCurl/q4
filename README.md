@@ -78,11 +78,14 @@ s@          Copy TOS to the ACC.
 
 (<code>)    IF: If (ACC = 0), skip to next ')'.
 
-!c(expr)    Store ACC to CELL address (expr) (eg - "340:B X!cB" stores X to [340]).
-@c          ACC = value at [ACC] (eg = "200@c" gets the value at [200]).
+!c(expr)    Store ACC to CELL address (expr) (eg - "340:B X!cB" stores X to CELLS[340]).
+@c          ACC = value at [ACC] (eg = "200@c" gets the value at CELLS[200]).
 
-!b(expr)    Store ACC to BYTE address (expr) (eg - "340:B X!cB" stores X to [340]).
-@b          ACC = value at [ACC] (eg = "200@b" gets the value at [200]).
+!b(expr)    Store ACC to BYTE address (expr) (eg - "340:B X!cB" stores X to BYTES[340]).
+@b          ACC = value at [ACC] (eg = "200@b" gets the value at BYTES[200]).
+
+m!(expr)    Store ACC to address (expr) (eg - "340:B Xm!B" stores X to [340]).
+m@          ACC = value at [ACC] (eg = "200m@" gets the value at address [200]).
 
 [           FOR LOOP: Set <count> = ACC. Initialize i to 0.
 i           Iteration counter of the current FOR loop (range: 0 to (expr)-1).

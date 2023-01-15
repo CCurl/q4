@@ -8,12 +8,11 @@
 #include <math.h>
 #include <time.h>
 
-typedef long cell_t;
 
-#define STK_SZ         32
-#define LSTK_SZ        32
-#define MEM_SZ     10000
-#define CODE_SZ      1000
+#define STK_SZ             32
+#define LSTK_SZ            11
+#define MEM_SZ          10000
+#define CODE_SZ          1000
 #define REGS_SZ     'z'-'A'+1
 #define FUNCS_SZ    'Z'-'A'+1
 
@@ -31,18 +30,19 @@ typedef long cell_t;
 #define L2           lstk[lsp-2]
 #define LU           lsp = (lsp<3) ? 0 : (lsp-3)
 
+#define BYTES(x)      mem.b[x]
+#define CELLS(x)      mem.c[x]
+
+typedef long cell_t;
 union { cell_t c[MEM_SZ/sizeof(cell_t)]; char b[MEM_SZ]; } mem;
 
-cell_t regs[REGS_SZ], *cell, lstk[LSTK_SZ+1];
-char *funcs[FUNCS_SZ];
-char *code, *stk[STK_SZ], *pc, *here, isBye;
-cell_t acc, sp, lsp, t1, t2;
-FILE* input_fp;
+cell_t regs[REGS_SZ], lstk[LSTK_SZ+1];
+char *funcs[FUNCS_SZ], *stk[STK_SZ], *pc, *here, isBye;
+cell_t acc, sp, lsp, t1;
+FILE *input_fp;
 
 void init() {
-    code = &mem.b[0];
-    cell = &mem.c[0];
-    here = &code[0];
+    here = &BYTES(0);
     *(here++) = ';';
 }
 
@@ -62,8 +62,8 @@ long expr() {
 void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /*<33*/ void NOP() { }
 /* ! */ void f33() { t1=NR;
-            if (t1=='c') { cell[expr()] = ACC; }
-            else if (t1=='b') { code[expr()] = (char)ACC; }
+            if (t1=='c') { CELLS(expr()) = ACC; }
+            else if (t1=='b') { BYTES(expr()) = (char)ACC; }
         }
 /* " */ void f34() { while (PC!='"') { putchar(NR); } ++pc; }
 /* # */ void f35() { }
@@ -93,8 +93,8 @@ void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* > */ void f62() { ACC = (ACC > expr()) ? -1 : 0;}
 /* ? */ void f63() { }
 /* @ */ void f64() { t1=NR;
-            if (t1=='c') { ACC = cell[ACC]; }
-            else if (t1=='b') { ACC = code[ACC]; }
+            if (t1=='c') { ACC = CELLS(ACC); }
+            else if (t1=='b') { ACC = BYTES(ACC); }
         }
 /*A2Z*/ void A2Z() { ACC = RG(IR); }
 /* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(cell_t)pc; }
@@ -104,6 +104,10 @@ void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* _ */ void f95() { }
 /* ` */ void f96() { }
 /* i */ void f105() { ACC = L0; }
+/* m */ void f109() { t1=NR;
+            if (t1=='@') { ACC = CELLS(ACC); }
+            else if (t1=='!') { *(char*)expr() = (char)ACC; }
+        }
 /* s */ void f115() { t1=NR; if (t1=='+') { stk[++sp]=(char*)ACC; } 
             else if (t1=='@') { ACC=(cell_t)stk[sp]; }
             else if (t1=='-') { ACC=(cell_t)stk[sp--]; } }
@@ -125,7 +129,7 @@ void (*jt[128])()={
     n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  f58,  f59,  f60,  f61,  f62,  f63,   //  48 ..  63
     f64,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,   //  64 ..  79
     A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  f91,  f92,  f93,  f94,  f95,   //  80 ..  95
-    f96,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  f105, XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //  96 .. 111
+    f96,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  f105, XXX,  XXX,  XXX,  f109, XXX,  XXX,   //  96 .. 111
     XXX,  XXX,  XXX,  f115, XXX,  XXX,  XXX,  XXX,  f120, XXX,  XXX,  f123, f124, f125, f126, XXX    // 112 .. 127
 };
 
@@ -136,7 +140,7 @@ void Run(const char *x) {
 }
 void Loop() {
     char *y = here;
-    int sz = &code[MEM_SZ]-y-1;
+    int sz = &BYTES(MEM_SZ)-y-1;
     if (input_fp) {
         if (fgets(y, sz, input_fp) != y) {
             fclose(input_fp);
