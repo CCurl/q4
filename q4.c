@@ -1,4 +1,4 @@
-// Q4.cpp - a fast register-based interpreter
+// q4.cpp - a fast register-based interpreter
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -35,7 +35,7 @@ union { cell_t c[MEM_SZ/sizeof(cell_t)]; char b[MEM_SZ]; } mem;
 
 cell_t regs[REGS_SZ], *cell, lstk[LSTK_SZ+1];
 char *funcs[FUNCS_SZ];
-char *code, *stk[STK_SZ], *pc, *here, *memEnd, isBye;
+char *code, *stk[STK_SZ], *pc, *here, isBye;
 cell_t acc, sp, lsp, t1, t2;
 FILE* input_fp;
 
@@ -61,7 +61,8 @@ long expr() {
 
 void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /*<33*/ void NOP() { }
-/* ! */ void f33() { t1=NR; if (t1=='c') { cell[expr()] = ACC; }
+/* ! */ void f33() { t1=NR;
+            if (t1=='c') { cell[expr()] = ACC; }
             else if (t1=='b') { code[expr()] = (char)ACC; }
         }
 /* " */ void f34() { while (PC!='"') { putchar(NR); } ++pc; }
@@ -80,19 +81,20 @@ void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* / */ void f47() { ACC /= expr(); }
 /*0-9*/ void n09() { --pc; ACC = expr(); }
 /* : */ void f58() { if (PC != ':') { RG(NR) = ACC; return; }
-            ++pc; funcs[NR-'A'] = here; while (PC) {
-                if ((PC==';') && ((*here-1)==';')) { break; }
-                else { here++; ++pc; }
-            } ++pc;
+            ++pc; funcs[PC-'A'] = pc+1;
+            while (PC) {
+                if ((PC==';') && (IR==';')) { break; }
+                else { ++pc; }
+            } ++pc; here=pc;
         }
 /* ; */ void f59() { if (0 < sp) { pc = stk[sp--]; } else { sp = 0; pc = 0; } }
 /* < */ void f60() { ACC = (ACC < expr()) ? -1 : 0; }
 /* = */ void f61() { ACC = (ACC == expr()) ? -1 : 0;}
 /* > */ void f62() { ACC = (ACC > expr()) ? -1 : 0;}
 /* ? */ void f63() { }
-/* @ */ void f64() { t1=NR; printf("-%c-",(char)t1);
-            if (t1=='c') { ACC = cell[expr()]; }
-            else if (t1=='b') { ACC = code[expr()]; }
+/* @ */ void f64() { t1=NR;
+            if (t1=='c') { ACC = cell[ACC]; }
+            else if (t1=='b') { ACC = code[ACC]; }
         }
 /*A2Z*/ void A2Z() { ACC = RG(IR); }
 /* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(cell_t)pc; }
@@ -134,7 +136,7 @@ void Run(const char *x) {
 }
 void Loop() {
     char *y = here;
-    int sz = memEnd-y-1;
+    int sz = &code[MEM_SZ]-y-1;
     if (input_fp) {
         if (fgets(y, sz, input_fp) != y) {
             fclose(input_fp);

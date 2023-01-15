@@ -1,14 +1,14 @@
-# Q4 - A fast register-based interpreter/VM
+# q4 - A fast register-based interpreter/VM
 
 ## Paradigm
-Q4 is a register-based system. For Q4, this means:
+q4 is a register-based system. For q4, this means:
 - There is an "accumulator" register, called ACC.
 - The ACC is somewhat similar to TOS in a stack-based system.
 - Naming a first-class register or specifying a constant sets the ACC.
 - Operations may use and/or set the ACC.
 - Operations can be chained.
 
-There is no compilation in Q4. The source code is executed directly.
+There is no compilation in q4. The source code is executed directly.
 
 ## Registers
 There are two types of registers, first-class and second-class:
@@ -95,5 +95,5 @@ xB          Output a single space.
 xB          Output a new-line (ASCII 10).
 xT          ACC = current clock() value.
 xU          Unwind the loop stack (use "(\u;)" to exit early from a loop).
-xQ          Exit Q4.
+xQ          Exit q4.
 ```
