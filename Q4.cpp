@@ -37,12 +37,13 @@ cell_t acc, here, sp, lsp, t1, t2;
 FILE* input_fp;
 
 inline float toFlt(cell_t x) { return *(float*)&x; }
-inline cell_t toInt(float x) { return *(cell_t*)&x; }
+inline cell_t toCell(float x) { return *(cell_t*)&x; }
 
 long expr() {
     if (BTW(PC, '0', '9')) {
         t1 = NR - '0';
         while (BTW(PC, '0', '9')) { t1 = (t1 * 10) + NR - '0'; }
+        if (PC=='e') { t1=toCell((float)t1); ++pc; }
         return t1;
     }
     // if (PC=='\'') { ++pc; return NR; } -- TOO SLOW!
@@ -87,13 +88,15 @@ void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* _ */ void f95() { }
 /* ` */ void f96() { }
 /* f */ void f102() { float f1, f2; t1 = NR;
-            if (t1=='f') { ACC=toInt(toFlt(ACC)); }
-            // if (t1=='i') { ACC=;(cell_t)toFlt(ACC); }
-            // if (t1=='+') { ;;; }
-            // if (t1=='.') { ;;; }
-            // if (t1=='-') { ;;; }
-            // if (t1=='<') { ;;; }
-            // if (t1=='>') { ;;; }
+            if (t1=='f') { ACC=toCell((float)ACC); }
+            if (t1=='i') { ACC=(cell_t)toFlt(ACC); }
+            if (t1=='.') { printf("%g", toFlt(ACC)); }
+            if (t1=='+') { ACC = toCell(toFlt(ACC) + toFlt(expr())); }
+            if (t1=='-') { ACC = toCell(toFlt(ACC) - toFlt(expr())); }
+            if (t1=='*') { ACC = toCell(toFlt(ACC) * toFlt(expr())); }
+            if (t1=='/') { ACC = toCell(toFlt(ACC) / toFlt(expr())); }
+            if (t1=='<') { ACC = (cell_t)(toFlt(ACC) < toFlt(expr())) ? -1 : 0; }
+            if (t1=='>') { ACC = (cell_t)(toFlt(ACC) > toFlt(expr())) ? -1 : 0; }
             // if (t1=='O') { ;;; }
             // if (t1=='C') { ;;; }
             // if (t1=='R') { ;;; }

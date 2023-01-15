@@ -41,6 +41,7 @@ M*X+B:Y           0(sets Y=M*X+B)
 ::H"Hello";;      0(define function H)
 ^H                0(call function H)
 xT:S ^H xT-S.     0(prints the elapsed time of function H)
+355e f/113e f.    0(prints PI ... 3.14159)
 ```
 
 ## Reference
