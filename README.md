@@ -1,14 +1,14 @@
-# Q4 - A fast register-based interpreter/VM
+# q4 - A fast register-based interpreter/VM
 
 ## Paradigm
-Q4 is a register-based system. For Q4, this means:
+q4 is a register-based system. For q4, this means:
 - There is an "accumulator" register, called ACC.
 - The ACC is somewhat similar to TOS in a stack-based system.
 - Naming a first-class register or specifying a constant sets the ACC.
 - Operations may use and/or set the ACC.
 - Operations can be chained.
 
-There is no compilation in Q4. The source code is executed directly.
+There is no compilation in q4. The source code is executed directly.
 
 ## Registers
 There are two types of registers, first-class and second-class:
@@ -78,8 +78,11 @@ s@          Copy TOS to the ACC.
 
 (<code>)    IF: If (ACC = 0), skip to next ')'.
 
-!(expr)     Store ACC to address (expr) (eg - "340:B X!B" stores X to [340]).
-@           ACC = value at [ACC] (eg = "200@" gets the value at [200]).
+!c(expr)    Store ACC to CELL address (expr) (eg - "340:B X!cB" stores X to [340]).
+@c          ACC = value at [ACC] (eg = "200@c" gets the value at [200]).
+
+!b(expr)    Store ACC to BYTE address (expr) (eg - "340:B X!cB" stores X to [340]).
+@b          ACC = value at [ACC] (eg = "200@b" gets the value at [200]).
 
 [           FOR LOOP: Set <count> = ACC. Initialize i to 0.
 i           Iteration counter of the current FOR loop (range: 0 to (expr)-1).
@@ -92,5 +95,5 @@ xB          Output a single space.
 xB          Output a new-line (ASCII 10).
 xT          ACC = current clock() value.
 xU          Unwind the loop stack (use "(\u;)" to exit early from a loop).
-xQ          Exit Q4.
+xQ          Exit q4.
 ```
