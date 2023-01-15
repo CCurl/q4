@@ -8,7 +8,11 @@
 #include <math.h>
 #include <time.h>
 
+#ifdef isLinux
 typedef long cell_t;
+#else
+typedef long cell_t;
+#endif
 
 #define STK_SZ         32
 #define LSTK_SZ        32
