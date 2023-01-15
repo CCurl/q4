@@ -36,8 +36,8 @@ char code[CODE_SZ], *stk[STK_SZ], *pc, ex[32], isBye;
 cell_t acc, here, sp, lsp, t1, t2;
 FILE* input_fp;
 
-inline float toFlt(int x) { return *(float*)&x; }
-inline int toInt(float x) { return *(int*)&x; }
+inline float toFlt(cell_t x) { return *(float*)&x; }
+inline cell_t toInt(float x) { return *(cell_t*)&x; }
 
 long expr() {
     if (BTW(PC, '0', '9')) {
@@ -86,6 +86,21 @@ void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* ^ */ void f94() { stk[++sp]=pc+1; pc=&code[funcs[PC-'A']]; return; }
 /* _ */ void f95() { }
 /* ` */ void f96() { }
+/* f */ void f102() { float f1, f2; t1 = NR;
+            if (t1=='f') { ACC=toInt(toFlt(ACC)); }
+            // if (t1=='i') { ACC=;(cell_t)toFlt(ACC); }
+            // if (t1=='+') { ;;; }
+            // if (t1=='.') { ;;; }
+            // if (t1=='-') { ;;; }
+            // if (t1=='<') { ;;; }
+            // if (t1=='>') { ;;; }
+            // if (t1=='O') { ;;; }
+            // if (t1=='C') { ;;; }
+            // if (t1=='R') { ;;; }
+            // if (t1=='W') { ;;; }
+            // if (t1=='@') { ;;; }
+            // if (t1=='@') { ;;; }
+        }
 /* i */ void f105() { ACC = L0; }
 /* s */ void f115() { t1=NR; if (t1=='+') { stk[++sp]=(char*)ACC; } 
             else if (t1=='@') { ACC=(cell_t)stk[sp]; }
@@ -108,7 +123,7 @@ void (*jt[128])()={
     n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  f58,  f59,  f60,  f61,  f62,  f63,   //  48 ..  63
     f64,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,   //  64 ..  79
     A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  f91,  f92,  f93,  f94,  f95,   //  80 ..  95
-    f96,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  f105, XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //  96 .. 111
+    f96,  XXX,  XXX,  XXX,  XXX,  XXX,  f102, XXX,  XXX,  f105, XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //  96 .. 111
     XXX,  XXX,  XXX,  f115, XXX,  XXX,  XXX,  XXX,  f120, XXX,  XXX,  f123, f124, f125, f126, XXX    // 112 .. 127
 };
 
