@@ -8,15 +8,11 @@
 #include <math.h>
 #include <time.h>
 
-#ifdef isLinux
 typedef long cell_t;
-#else
-typedef long cell_t;
-#endif
 
 #define STK_SZ         32
 #define LSTK_SZ        32
-#define DATA_SZ     10000
+#define MEM_SZ     10000
 #define CODE_SZ      1000
 #define REGS_SZ     'z'-'A'+1
 #define FUNCS_SZ    'Z'-'A'+1
@@ -35,10 +31,20 @@ typedef long cell_t;
 #define L2           lstk[lsp-2]
 #define LU           lsp = (lsp<3) ? 0 : (lsp-3)
 
-cell_t regs[REGS_SZ], data[DATA_SZ], funcs[FUNCS_SZ], lstk[LSTK_SZ+1];
-char code[CODE_SZ], *stk[STK_SZ], *pc, ex[32], isBye;
-cell_t acc, here, sp, lsp, t1, t2;
+union { cell_t c[MEM_SZ/sizeof(cell_t)]; char b[MEM_SZ]; } mem;
+
+cell_t regs[REGS_SZ], *cell, lstk[LSTK_SZ+1];
+char *funcs[FUNCS_SZ];
+char *code, *stk[STK_SZ], *pc, *here, *memEnd, isBye;
+cell_t acc, sp, lsp, t1, t2;
 FILE* input_fp;
+
+void init() {
+    code = &mem.b[0];
+    cell = &mem.c[0];
+    here = &code[0];
+    *(here++) = ';';
+}
 
 inline float toFlt(int x) { return *(float*)&x; }
 inline int toInt(float x) { return *(int*)&x; }
@@ -55,7 +61,9 @@ long expr() {
 
 void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /*<33*/ void NOP() { }
-/* ! */ void f33() { data[expr()] = ACC; }
+/* ! */ void f33() { t1=NR; if (t1=='c') { cell[expr()] = ACC; }
+            else if (t1=='b') { code[expr()] = (char)ACC; }
+        }
 /* " */ void f34() { while (PC!='"') { putchar(NR); } ++pc; }
 /* # */ void f35() { }
 /* $ */ void f36() { }
@@ -73,8 +81,8 @@ void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /*0-9*/ void n09() { --pc; ACC = expr(); }
 /* : */ void f58() { if (PC != ':') { RG(NR) = ACC; return; }
             ++pc; funcs[NR-'A'] = here; while (PC) {
-                if ((PC==';') && (code[here-1]==';')) { break; }
-                else { code[here++]=NR; }
+                if ((PC==';') && ((*here-1)==';')) { break; }
+                else { here++; ++pc; }
             } ++pc;
         }
 /* ; */ void f59() { if (0 < sp) { pc = stk[sp--]; } else { sp = 0; pc = 0; } }
@@ -82,12 +90,15 @@ void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
 /* = */ void f61() { ACC = (ACC == expr()) ? -1 : 0;}
 /* > */ void f62() { ACC = (ACC > expr()) ? -1 : 0;}
 /* ? */ void f63() { }
-/* @ */ void f64() { ACC = data[ACC]; }
+/* @ */ void f64() { t1=NR; printf("-%c-",(char)t1);
+            if (t1=='c') { ACC = cell[expr()]; }
+            else if (t1=='b') { ACC = code[expr()]; }
+        }
 /*A2Z*/ void A2Z() { ACC = RG(IR); }
 /* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(cell_t)pc; }
 /* \ */ void f92() { }
 /* ] */ void f93() { if (++L0<L1) { pc=(char *)L2; } else { LU; } }
-/* ^ */ void f94() { stk[++sp]=pc+1; pc=&code[funcs[PC-'A']]; return; }
+/* ^ */ void f94() { stk[++sp]=pc+1; pc=funcs[PC-'A']; return; }
 /* _ */ void f95() { }
 /* ` */ void f96() { }
 /* i */ void f105() { ACC = L0; }
@@ -122,9 +133,10 @@ void Run(const char *x) {
     while (pc) { jt[NR](); }
 }
 void Loop() {
-    char buf[128] = { 0 };
+    char *y = here;
+    int sz = memEnd-y-1;
     if (input_fp) {
-        if (fgets(buf, sizeof(buf), input_fp) != buf) {
+        if (fgets(y, sz, input_fp) != y) {
             fclose(input_fp);
             input_fp = NULL;
         }
@@ -132,14 +144,14 @@ void Loop() {
     if (!input_fp) {
         // putchar('\n'); putchar('q'); putchar('4'); putchar('>');
         printf("\nq4:(%ld)> ", (long)ACC);
-        if (fgets(buf, sizeof(buf), stdin) != buf) { isBye=1; return; }
+        if (fgets(y, sz, stdin) != y) { isBye=1; return; }
     }
-    Run(buf);
+    Run(y);
 }
 int main(int argc, char *argv[]) {
     // int r='B';
     // for (i=1; i<argc; ++i) { y=argv[i]; RG[b++] = atoi(y); }
-    here = 1; code[0] = ';';
+    init();
     input_fp = fopen("src.q4", "rb");
     while (isBye == 0) { Loop(); }
     return 0;
