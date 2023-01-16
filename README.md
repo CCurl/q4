@@ -45,58 +45,75 @@ xT:S ^H xT-S.     0(prints the elapsed time of function H)
 
 ## Reference
 ```
-"string"    Print "string".
+******* REGISTER OPERATIONS *******
+[A-Z]       Set ACC = register[X].
+:[A-z]      Set register[X] = ACC.
+i[A-z]      Increment register[X].
+d[A-z]      Decrement register[X].
+
+
+******* INPUT/OUTPUT *******
+[0-9]*      Parse a decimal number into ACC.
+'(c)        Set the ACC to the ASCII value of (c).
+"string"    Output "string".
 .           Output the ACC as a decimal number.
+.h          Output the ACC as a hex number.
+.b          Output a single space.
+.n          Output a new-line (ASCII 10).
 ,           Output the ACC as an ASCII character.
 
+
+******* FUNCTIONS *******
 ::<X>...;;  Define function <X>.
 ^<X>        Call function <X>.
 ;           Return from function.
 
-[0-9]*      Parse a decimal number into ACC.
-'(c)        Set the ACC to the ASCII value of (c).
-[A-Z]       Set ACC = register[X].
 
-:[A-z]      Set register[X] = ACC.
+******* STACK OPERATIONS *******
+s[A-Z]      Push/save register[X] onto the stack.
+s.          Push/save ACC onto the stack.
+r[A-Z]      Pop/restore register[X] from the stack.
+r.          Pop/restore ACC from the stack.
+r@          Copy the top of the stack to the ACC.
 
-s+          Push ACC onto the stack.
-s-          Pop ACC from the stack.
-s@          Copy TOS to the ACC.
 
-++[A-z]     Increment register[X].
---[A-z]     Decrement register[X].
-
+******* MATH *******
 +(expr)     ACC = ACC + (expr).
 -(expr)     ACC = ACC - (expr).
 *(expr)     ACC = ACC * (expr).
 /(expr)     ACC = ACC / (expr).
 
 
+******* COMPARISONS *******
 <(expr)     ACC = (ACC < (expr)) ? -1 : 0.
 =(expr)     ACC = (ACC = (expr)) ? -1 : 0.
 >(expr)     ACC = (ACC > (expr)) ? -1 : 0.
 
+
+******* IF/THEN *******
 (<code>)    IF: If (ACC = 0), skip to next ')'.
 
-!c(expr)    Store ACC to CELL address (expr) (eg - "340:B X!cB" stores X to CELLS[340]).
-@c          ACC = value at [ACC] (eg = "200@c" gets the value at CELLS[200]).
 
-!b(expr)    Store ACC to BYTE address (expr) (eg - "340:B X!cB" stores X to BYTES[340]).
-@b          ACC = value at [ACC] (eg = "200@b" gets the value at BYTES[200]).
+******* MEMORY OPERATIONS *******
+!b(expr)    Set BYTES[(expr)]=ACC. This is an 8-bit operation.
+!c(expr)    Set CELL[(expr)]=ACC. This is a (16/32/64-bit) operation.
+!m(expr)    Set ABSOLUTE[(expr)]=ACC. This is an 8-bit operation.
+@b          Set ACC=BYTES[ACC].
+@c          Set ACC=CELLS[ACC].
+@m          Set ACC=ABSOLUTE[ACC].
 
-m!(expr)    Store ACC to address (expr) (eg - "340:B Xm!B" stores X to [340]).
-m@          ACC = value at [ACC] (eg = "200m@" gets the value at address [200]).
-
-[           FOR LOOP: Set <count> = ACC. Initialize i to 0.
-i           Iteration counter of the current FOR loop (range: 0 to (expr)-1).
-]           Increment i. If (i < <count>), jump back to the beginning.
-
+******* LOOPS *******
+[           FOR LOOP: Set (count) = ACC. Save register[I]. Set register[I] to 0.
+I           NOTE: Register[I] is the iteration counter for the current.
+]           Increment register[I]. If (register[I] < (count)), jump back to the beginning.
 {           WHILE LOOP: Begin.
 }           End WHILE loop. If (ACC != 0), jump back to the beginning.
-
-xB          Output a single space.
-xB          Output a new-line (ASCII 10).
-xT          ACC = current clock() value.
 xU          Unwind the loop stack (use "(\u;)" to exit early from a loop).
+
+******* OTHER *******
+xM          Start address of the CELLS/BYTES area.
+xH          Offset of the last used byte of code in the BYTES area.
+xT          ACC = current clock() value.
+`cmd`       Call system("cmd") (PC only).
 xQ          Exit q4.
 ```
