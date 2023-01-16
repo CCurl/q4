@@ -1,12 +1,16 @@
 // q4.cpp - a fast register-based interpreter
 
+// Windows PC (Visual Studio)?
+#ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
+#define isPC
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-//#include <math.h>
 #include <time.h>
+//#include <math.h>
 
 #define STK_SZ             32
 #define LSTK_SZ            11
@@ -69,7 +73,7 @@ void Run2(const char *x) {
 next:
     switch (NR) {
     case 0: return;
-    case 9: case 10: case13: case ' ': NEXT;
+    case 9: case 10: case 13: case ' ': NEXT;
     case '!': t1=NR;
             if (t1=='c') { CELLS(expr()) = ACC; }
             else if (t1=='b') { BYTES(expr()) = (char)ACC; }
@@ -123,11 +127,11 @@ next:
 #endif
     case 'd': --RG(NR); NEXT;
     case 'i': ++RG(NR); NEXT;
-    case 'p': t1=NR; if (t1=='.') { ACC=(cell_t)stk[+sp--]; } 
+    case 'r': t1=NR; if (t1=='.') { ACC=(cell_t)stk[+sp--]; } 
             else if (t1=='@') { ACC=(cell_t)stk[sp]; }
             else { RG(t1)=(cell_t)stk[sp--]; }
             NEXT;
-    case 'u': t1=NR; if (t1=='.') { stk[++sp]=(char*)ACC; } 
+    case 's': t1=NR; if (t1=='.') { stk[++sp]=(char*)ACC; } 
             else { stk[++sp]=(char*)RG(t1); } 
             NEXT;
     case 'x': t1 = NR; if (t1=='T') { ACC = clock(); }

@@ -1,14 +1,15 @@
 # q4 - A fast register-based interpreter/VM
 
 ## Paradigm
-q4 is a register-based system. For q4, this means:
+q4 is a human-readable machine language for a virtual CPU.
 - There is an "accumulator" register, called ACC.
 - The ACC is somewhat similar to TOS in a stack-based system.
+- There are 26 first-class registers, and 26 second-class registers.
 - Naming a first-class register or specifying a constant sets the ACC.
 - Operations may use and/or set the ACC.
 - Operations can be chained.
 
-There is no compilation in q4. The source code is executed directly.
+There is no compilation in q4. The machine language is executed directly.
 
 ## Registers
 There are two types of registers, first-class and second-class:
@@ -32,15 +33,16 @@ An (expr) can be either a register (first or second class), or a constant.
 ```
 0(this is a comment)
 1234              0(sets ACC=1234)
-:G                0(sets register G=ACC ... 1234)
+:G                0(sets register G=ACC)
 C.                0(sets ACC=register C, prints ACC as a decimal)
 34-12             0(sets ACC=34, sets ACC=ACC-12)
 'Y,               0(sets ACC=89, prints the ACC ... "Y")
 M*X+B:Y           0(sets Y=M*X+B)
 "Hello"           0(prints "Hello")
-::H"Hello";;      0(define function H)
+::H"Hi";;         0(define function H)
 ^H                0(call function H)
 xT:S ^H xT-S.     0(prints the elapsed time of function H)
+sGrC              0(Copies register G to C using the stack)
 ```
 
 ## Reference
@@ -64,16 +66,16 @@ d[A-z]      Decrement register[X].
 
 
 ******* FUNCTIONS *******
-::<X>...;;  Define function <X>.
-^<X>        Call function <X>.
+::X...;;    Define function X.
+^X          Call function X.
 ;           Return from function.
 
 
 ******* STACK OPERATIONS *******
-s[A-Z]      Push/save register[X] onto the stack.
-s.          Push/save ACC onto the stack.
-r[A-Z]      Pop/restore register[X] from the stack.
-r.          Pop/restore ACC from the stack.
+s[A-Z]      Save register[X] onto the stack.
+s.          Save ACC onto the stack.
+r[A-Z]      Restore register[X] from the stack.
+r.          Restore ACC from the stack.
 r@          Copy the top of the stack to the ACC.
 
 
