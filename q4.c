@@ -67,7 +67,7 @@ long expr() {
 }
 
 #define NEXT goto next
-void Run2(const char *x) {
+void Run(const char *x) {
     sp = lsp = 0;
     pc = (char *)x;
 next:
@@ -80,7 +80,7 @@ next:
             else if (t1=='m') { *(char*)(expr()) = (char)ACC; }
         NEXT;
     case '"': while (PC && (PC!='"')) { putchar(NR); } if (PC) ++pc; NEXT;
-    // '#' .. '&': free;
+    // '#' .. '&' are free;
     case '\'': ACC = NR; NEXT;
     case '(': if (!ACC) { while (NR != ')') { ; } } NEXT;
     case ')': NEXT;
@@ -88,15 +88,14 @@ next:
     case '+': ACC += expr(); NEXT;
     case ',': putchar((int)ACC); NEXT;
     case '-': ACC -= expr(); NEXT;
-    case '.': t1=PC; if (t1 == 'b') { putchar(' '); ++pc; }
-        else if (t1 == 'n') { putchar(10); ++pc; }
-        else if (t1 == 'h') { printf("%lx", (long)ACC); ++pc; }
-        else { printf("%ld", (long)ACC); }
+    case '.': t1=NR; if (t1 == 'b') { putchar(' '); }
+        else if (t1 == 'n') { putchar(10); }
+        else if (t1 == 'h') { printf("%lx", (long)ACC); }
+        else { --pc; printf("%ld", (long)ACC); }
         NEXT;
     case '/': ACC /= expr(); NEXT;
     case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-        --pc; ACC = expr(); NEXT;
+    case '5': case '6': case '7': case '8': case '9': --pc; ACC = expr(); NEXT;
     case ':': if (PC != ':') { RG(NR) = ACC; NEXT; }
         ++pc; funcs[PC-'A'] = pc+1;
         while (PC) {
@@ -107,7 +106,7 @@ next:
     case '<': ACC = (ACC <  expr()) ? -1 : 0; NEXT;
     case '=': ACC = (ACC == expr()) ? -1 : 0; NEXT;
     case '>': ACC = (ACC >  expr()) ? -1 : 0; NEXT;
-    case '?': NEXT;
+    // case '?': free;
     case '@': t1=NR;
             if (t1=='c') { ACC = CELLS(ACC); }
             else if (t1=='b') { ACC = BYTES(ACC); }
@@ -120,13 +119,14 @@ next:
     case '[': lsp+=3; L0=RG('I'); RG('I')=0; L1=ACC; L2=(cell_t)pc; NEXT;
     case ']': if (++RG('I')<L1) { pc=(char *)L2; } else { RG('I')=L0; LU; } NEXT;
     case '^': stk[++sp]=pc+1; pc=funcs[PC-'A']; NEXT;
-    // case '\', '_', '`': free;
+    // case '\', '_', '`' are free;
 #ifdef isPC
     case '`': { char *x=here+64, *y=x; while ( PC!='`') { *(y++)=NR; }
             *y=0; ACC=system(x); }; NR; NEXT;
 #endif
     case 'd': --RG(NR); NEXT;
     case 'i': ++RG(NR); NEXT;
+    case 'm': t1 = NR; RG(NR) = RG(t1); NEXT;
     case 'r': t1=NR; if (t1=='.') { ACC=(cell_t)stk[+sp--]; } 
             else if (t1=='@') { ACC=(cell_t)stk[sp]; }
             else { RG(t1)=(cell_t)stk[sp--]; }
@@ -164,7 +164,7 @@ void Loop() {
         printf("\nq4:(%ld)> ", (long)ACC);
         if (fgets(y, sz, stdin) != y) { isBye=1; return; }
     }
-    Run2(y);
+    Run(y);
 }
 int main(int argc, char *argv[]) {
     // int r='A';
@@ -174,5 +174,4 @@ int main(int argc, char *argv[]) {
     while (isBye == 0) { Loop(); }
     return 0;
 }
-
 #endif

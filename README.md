@@ -12,11 +12,11 @@ q4 is a human-readable machine language for a virtual CPU.
 There is no compilation in q4. The machine language is executed directly.
 
 ## Registers
-There are two types of registers, first-class and second-class:
+There are two types of registers, first-class and second-class.
 - The first-class registers are (A-Z).
 - The second-class registers are (a-z).
 - Naming a first-class register sets the ACC.
-- Both types can be set and can come after an operator (eg - ":<x>" or "+<a>").
+- Both types can be set and can come after an operator (eg - ":<x>" or "+<a>" or "mXY").
 
 ## Operations
 An operation can take 0, 1 or 2 operands:
@@ -42,16 +42,18 @@ M*X+B:Y           0(sets Y=M*X+B)
 ::H"Hi";;         0(define function H)
 ^H                0(call function H)
 xT:S ^H xT-S.     0(prints the elapsed time of function H)
-sGrC              0(Copies register G to C using the stack)
+sG rC             0(Copies register G to C using the stack)
+mXY               0(Moves/copies register X to Y)
 ```
 
 ## Reference
 ```
 ******* REGISTER OPERATIONS *******
-[A-Z]       Set ACC = register[X].
+[A-Z]       Set ACC = register[X]. First-class registers only.
 :[A-z]      Set register[X] = ACC.
 i[A-z]      Increment register[X].
 d[A-z]      Decrement register[X].
+mAB         Move/copy register A to B. Does not affect the ACC.
 
 
 ******* INPUT/OUTPUT *******
@@ -72,9 +74,9 @@ d[A-z]      Decrement register[X].
 
 
 ******* STACK OPERATIONS *******
-s[A-Z]      Save register[X] onto the stack.
+s[A-z]      Save register[X] onto the stack.
 s.          Save ACC onto the stack.
-r[A-Z]      Restore register[X] from the stack.
+r[A-z]      Restore register[X] from the stack.
 r.          Restore ACC from the stack.
 r@          Copy the top of the stack to the ACC.
 
@@ -97,6 +99,10 @@ r@          Copy the top of the stack to the ACC.
 
 
 ******* MEMORY OPERATIONS *******
+            NOTE: Blurb about how CELLS and BYTES share the same memory.
+                - a BYTE index is (cell-size)*index for a CELL
+                - a BYTE index is (cell-size)*index for a CELL
+                - CELL index X refers to the same location as BYTE index sizeof(cell)*X.
 !b(expr)    Set BYTES[(expr)]=ACC. This is an 8-bit operation.
 !c(expr)    Set CELL[(expr)]=ACC. This is a (16/32/64-bit) operation.
 !m(expr)    Set ABSOLUTE[(expr)]=ACC. This is an 8-bit operation.
