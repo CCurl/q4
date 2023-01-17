@@ -19,31 +19,34 @@ There are two types of registers, first-class and second-class.
 - Both types can be set and can come after an operator (eg - ":<x>" or "+<a>" or "mXY").
 
 ## Operations
-An operation can take 0, 1 or 2 operands:
-- If an operation takes no operands, it just does whatever it does (eg - '"' or ';').
-- If an operation takes one operand, the ACC is the operand (eg - '.' or '[').
-- If an operation takes two operands, the ACC and (expr) are they (eg - '*' or '=').
-- If an operation results in a value, that value goes into the ACC.
+An operation is just an opcode with some number of operands:
+- There is NO space between an opcode and its operand(s).
+- The list of opcodes is in the reference below.
 - Operations can be chained (eg - M*X+B:Y).
 
 ## Expressions
-An (expr) can be either a register (first or second class), or a constant.
+An (expr) can be:
+- A register (first or second class).
+- A decimal constant.
+- '.', which means the ACC (eg - "25*." sets ACC=25*25).
 
 ## Some examples: 
 ```
 0(this is a comment)
 1234              0(sets ACC=1234)
 :G                0(sets register G=ACC)
-C.                0(sets ACC=register C, prints ACC as a decimal)
+..                0(prints ACC as a decimal)
+.C                0(prints register C as a decimal)
 34-12             0(sets ACC=34, sets ACC=ACC-12)
 'Y,               0(sets ACC=89, prints the ACC ... "Y")
 M*X+B:Y           0(sets Y=M*X+B)
 "Hello"           0(prints "Hello")
-::H"Hi";;         0(define function H)
+::H1000*.[^A];;   0(define function H)
 ^H                0(call function H)
-xT:S ^H xT-S.     0(prints the elapsed time of function H)
+xT:S ^H xT-.S     0(prints the elapsed time of function H)
 sG rC             0(Copies register G to C using the stack)
-mXY               0(Moves/copies register X to Y)
+mXY               0(Moves/copies register X to Y, leaves ACC alone)
+25*. ..           0(Sets ACC=15, sets ACC=ACC*ACC, prints ACC)
 ```
 
 ## Reference
@@ -60,11 +63,11 @@ mAB         Move/copy register A to B. Does not affect the ACC.
 [0-9]*      Parse a decimal number into ACC.
 '(c)        Set the ACC to the ASCII value of (c).
 "string"    Output "string".
-.           Output the ACC as a decimal number.
-.h          Output the ACC as a hex number.
+.(expr)     Output (expr) as a decimal number.
+.h(expr)    Output (expr) as a hex number.
 .b          Output a single space.
 .n          Output a new-line (ASCII 10).
-,           Output the ACC as an ASCII character.
+,(expr)     Output (expr) as an ASCII character.
 
 
 ******* FUNCTIONS *******
@@ -74,11 +77,10 @@ mAB         Move/copy register A to B. Does not affect the ACC.
 
 
 ******* STACK OPERATIONS *******
-s[A-z]      Save register[X] onto the stack.
-s.          Save ACC onto the stack.
-r[A-z]      Restore register[X] from the stack.
-r.          Restore ACC from the stack.
-r@          Copy the top of the stack to the ACC.
+s(expr)     Save (expr) onto the stack.
+r[A-z]      Restore/pop TOS to register[X].
+r.          Restore/pop TOS to the ACC.
+r@          Copy the TOS to the ACC.
 
 
 ******* MATH *******
@@ -86,6 +88,7 @@ r@          Copy the top of the stack to the ACC.
 -(expr)     ACC = ACC - (expr).
 *(expr)     ACC = ACC * (expr).
 /(expr)     ACC = ACC / (expr).
+%(expr)     ACC = ACC % (expr).
 
 
 ******* COMPARISONS *******
@@ -99,16 +102,16 @@ r@          Copy the top of the stack to the ACC.
 
 
 ******* MEMORY OPERATIONS *******
-            NOTE: Blurb about how CELLS and BYTES share the same memory.
-                - a BYTE index is (cell-size)*index for a CELL
-                - a BYTE index is (cell-size)*index for a CELL
-                - CELL index X refers to the same location as BYTE index sizeof(cell)*X.
+            NOTE: CELLS and BYTES share the same memory.
+                - BYTE index B refers to the same location as CELL index B/(cell-size).
+                - CELL index C refers to the same location as BYTE index C*(cell-size).
+                - eg: for a (cell-size) of 4, CELLS[10] is BYTES[40-43].
 !b(expr)    Set BYTES[(expr)]=ACC. This is an 8-bit operation.
-!c(expr)    Set CELL[(expr)]=ACC. This is a (16/32/64-bit) operation.
+!c(expr)    Set CELLS[(expr)]=ACC. This is a (cell-size) operation.
 !m(expr)    Set ABSOLUTE[(expr)]=ACC. This is an 8-bit operation.
-@b          Set ACC=BYTES[ACC].
-@c          Set ACC=CELLS[ACC].
-@m          Set ACC=ABSOLUTE[ACC].
+@b(expr)    Set ACC=BYTES[(expr)].
+@c(expr)    Set ACC=CELLS[(expr)].
+@m(expr)    Set ACC=ABSOLUTE[(expr)].
 
 ******* LOOPS *******
 [           FOR LOOP: Set (count) = ACC. Save register[I]. Set register[I] to 0.
@@ -119,8 +122,9 @@ I           NOTE: Register[I] is the iteration counter for the current.
 xU          Unwind the loop stack (use "(\u;)" to exit early from a loop).
 
 ******* OTHER *******
+9/10/13/32  These ASCII chars are no-ops, and are optional.
 xM          Start address of the CELLS/BYTES area.
-xH          Offset of the last used byte of code in the BYTES area.
+xH          Index to the next free byte in the BYTES area.
 xT          ACC = current clock() value.
 `cmd`       Call system("cmd") (PC only).
 xQ          Exit q4.

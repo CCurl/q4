@@ -62,8 +62,10 @@ long expr() {
         while (BTW(PC, '0', '9')) { t1 = (t1 * 10) + NR - '0'; }
         return t1;
     }
-    // if (PC=='\'') { ++pc; return NR; } -- TOO SLOW!
+    if (PC == '.') { ++pc; return ACC; }
     return RG(NR);
+    // if ('A' <= PC) { return RG(NR); }
+    // return ACC;
 }
 
 #define NEXT goto next
@@ -80,18 +82,19 @@ next:
             else if (t1=='m') { *(char*)(expr()) = (char)ACC; }
         NEXT;
     case '"': while (PC && (PC!='"')) { putchar(NR); } if (PC) ++pc; NEXT;
+    case '%': ACC %= expr(); NEXT;
     // '#' .. '&' are free;
     case '\'': ACC = NR; NEXT;
     case '(': if (!ACC) { while (NR != ')') { ; } } NEXT;
     case ')': NEXT;
     case '*': ACC *= expr(); NEXT;
     case '+': ACC += expr(); NEXT;
-    case ',': putchar((int)ACC); NEXT;
+    case ',': putchar((int)expr()); NEXT;
     case '-': ACC -= expr(); NEXT;
     case '.': t1=NR; if (t1 == 'b') { putchar(' '); }
         else if (t1 == 'n') { putchar(10); }
-        else if (t1 == 'h') { printf("%lx", (long)ACC); }
-        else { --pc; printf("%ld", (long)ACC); }
+        else if (t1 == 'h') { printf("%lx", (long)expr()); }
+        else { --pc; printf("%ld", expr()); }
         NEXT;
     case '/': ACC /= expr(); NEXT;
     case '0': case '1': case '2': case '3': case '4':
@@ -108,9 +111,9 @@ next:
     case '>': ACC = (ACC >  expr()) ? -1 : 0; NEXT;
     // case '?': free;
     case '@': t1=NR;
-            if (t1=='c') { ACC = CELLS(ACC); }
-            else if (t1=='b') { ACC = BYTES(ACC); }
-            else if (t1=='m') { ACC = *(char*)(ACC); }
+            if (t1=='c') { ACC = CELLS(expr()); }
+            else if (t1=='b') { ACC = BYTES(expr()); }
+            else if (t1=='m') { ACC = *(char*)(expr()); }
             NEXT;
     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':
     case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
