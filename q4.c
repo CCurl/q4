@@ -15,7 +15,7 @@
 #define STK_SZ             32
 #define LSTK_SZ            11
 #define MEM_SZ          10000
-#define CODE_SZ          2048
+#define CODE_SZ         20480
 #define REGS_SZ     'z'-'A'+1
 #define FUNCS_SZ    'Z'-'A'+1
 
@@ -125,7 +125,7 @@ next:
     // case '\', '_', '`' are free;
 #ifdef isPC
     case '`': { char *x=here+64, *y=x; while ( PC!='`') { *(y++)=NR; }
-            *y=0; ACC=system(x); }; NR; NEXT;
+            *y=0; ACC=system(x); }; ++pc; NEXT;
 #endif
     case 'd': --RG(NR); NEXT;
     case 'i': ++RG(NR); NEXT;
