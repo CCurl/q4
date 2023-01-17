@@ -100,7 +100,7 @@ next:
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9': --pc; ACC = expr(); NEXT;
     case ':': if (PC != ':') { RG(NR) = ACC; NEXT; }
-        ++pc; funcs[PC-'A'] = pc+1;
+        pc += 2; funcs[IR-'A'] = pc;
         while (PC) {
             if ((PC==';') && (IR==';')) { break; }
             else { ++pc; }
