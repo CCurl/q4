@@ -1,18 +1,21 @@
 // q4.cpp - a fast register-based interpreter
 
+// Windows PC (Visual Studio)?
+#ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
+#define isPC
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <math.h>
 #include <time.h>
-
+//#include <math.h>
 
 #define STK_SZ             32
 #define LSTK_SZ            11
 #define MEM_SZ          10000
-#define CODE_SZ          1000
+#define CODE_SZ         20480
 #define REGS_SZ     'z'-'A'+1
 #define FUNCS_SZ    'Z'-'A'+1
 
@@ -28,7 +31,7 @@
 #define L0           lstk[lsp]
 #define L1           lstk[lsp-1]
 #define L2           lstk[lsp-2]
-#define LU           lsp = (lsp<3) ? 0 : (lsp-3)
+#define LU           lsp=(lsp<3)?0:(lsp-3)
 
 #define BYTES(x)      mem.b[x]
 #define CELLS(x)      mem.c[x]
@@ -37,17 +40,21 @@ typedef long cell_t;
 union { cell_t c[MEM_SZ/sizeof(cell_t)]; char b[MEM_SZ]; } mem;
 
 cell_t regs[REGS_SZ], lstk[LSTK_SZ+1];
-char *funcs[FUNCS_SZ], *stk[STK_SZ], *pc, *here, isBye;
+char *funcs[FUNCS_SZ], *stk[STK_SZ], *pc, *here;
 cell_t acc, sp, lsp, t1;
+
+#ifdef isPC
 FILE *input_fp;
+int isBye;
+#endif
 
 void init() {
     here = &BYTES(0);
     *(here++) = ';';
 }
 
-inline float toFlt(int x) { return *(float*)&x; }
-inline int toInt(float x) { return *(int*)&x; }
+// inline float toFlt(int x) { return *(float*)&x; }
+// inline int toInt(float x) { return *(int*)&x; }
 
 long expr() {
     if (BTW(PC, '0', '9')) {
@@ -55,89 +62,103 @@ long expr() {
         while (BTW(PC, '0', '9')) { t1 = (t1 * 10) + NR - '0'; }
         return t1;
     }
-    // if (PC=='\'') { ++pc; return NR; } -- TOO SLOW!
+    if (PC == '.') { ++pc; return ACC; }
     return RG(NR);
+    // if ('A' <= PC) { return RG(NR); }
+    // return ACC;
 }
 
-void XXX() { if (IR) printf("-IR %d (%c)?", IR, IR); pc=0; }
-/*<33*/ void NOP() { }
-/* ! */ void f33() { t1=NR;
-            if (t1=='c') { CELLS(expr()) = ACC; }
-            else if (t1=='b') { BYTES(expr()) = (char)ACC; }
-        }
-/* " */ void f34() { while (PC!='"') { putchar(NR); } ++pc; }
-/* # */ void f35() { }
-/* $ */ void f36() { }
-/* % */ void f37() { }
-/* & */ void f38() { }
-/* ' */ void f39() { ACC = NR; }
-/* ( */ void f40() { if (!ACC) { while (NR != ')') { ; } } }
-/* ) */ void f41() { }
-/* * */ void f42() { ACC *= expr(); }
-/* + */ void f43() { if (PC == '+') { ++pc; ++RG(NR); } else { ACC += expr(); } }
-/* , */ void f44() { putchar((int)ACC); }
-/* - */ void f45() { if (PC == '-') { ++pc; --RG(NR); } else { ACC -= expr(); } }
-/* . */ void f46() { printf("%ld", (long)ACC); }
-/* / */ void f47() { ACC /= expr(); }
-/*0-9*/ void n09() { --pc; ACC = expr(); }
-/* : */ void f58() { if (PC != ':') { RG(NR) = ACC; return; }
-            ++pc; funcs[PC-'A'] = pc+1;
-            while (PC) {
-                if ((PC==';') && (IR==';')) { break; }
-                else { ++pc; }
-            } ++pc; here=pc;
-        }
-/* ; */ void f59() { if (0 < sp) { pc = stk[sp--]; } else { sp = 0; pc = 0; } }
-/* < */ void f60() { ACC = (ACC < expr()) ? -1 : 0; }
-/* = */ void f61() { ACC = (ACC == expr()) ? -1 : 0;}
-/* > */ void f62() { ACC = (ACC > expr()) ? -1 : 0;}
-/* ? */ void f63() { }
-/* @ */ void f64() { t1=NR;
-            if (t1=='c') { ACC = CELLS(ACC); }
-            else if (t1=='b') { ACC = BYTES(ACC); }
-        }
-/*A2Z*/ void A2Z() { ACC = RG(IR); }
-/* [ */ void f91() { lsp+=3; L0=0; L1=ACC; L2=(cell_t)pc; }
-/* \ */ void f92() { }
-/* ] */ void f93() { if (++L0<L1) { pc=(char *)L2; } else { LU; } }
-/* ^ */ void f94() { stk[++sp]=pc+1; pc=funcs[PC-'A']; return; }
-/* _ */ void f95() { }
-/* ` */ void f96() { }
-/* i */ void f105() { ACC = L0; }
-/* m */ void f109() { t1=NR;
-            if (t1=='@') { ACC = CELLS(ACC); }
-            else if (t1=='!') { *(char*)expr() = (char)ACC; }
-        }
-/* s */ void f115() { t1=NR; if (t1=='+') { stk[++sp]=(char*)ACC; } 
-            else if (t1=='@') { ACC=(cell_t)stk[sp]; }
-            else if (t1=='-') { ACC=(cell_t)stk[sp--]; } }
-/* x */ void f120() { t1 = NR; if (t1=='T') { ACC = clock(); }
-            else if (t1 == 'B') { putchar(' '); }
-            else if (t1 == 'N') { putchar(10); }
-            else if (t1 == 'U') { LU; }
-            else if (t1 == 'Q') { isBye = 1; }
-        }
-/* { */ void f123() { lsp += 3; L0 = (cell_t)pc; }
-/* | */ void f124() { }
-/* } */ void f125() { if (ACC) { pc = (char*)L0; } else { LU; } }
-/* ~ */ void f126() { }
-
-void (*jt[128])()={
-    XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  NOP,  NOP,  XXX,  XXX,  NOP,  XXX,  XXX,   //   0 ..  15
-    XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,   //  16 ..  31
-    NOP,  f33,  f34,  f35,  f36,  f37,  f38,  f39,  f40,  NOP,  f42,  f43,  f44,  f45,  f46,  f47,   //  32 ..  47
-    n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  n09,  f58,  f59,  f60,  f61,  f62,  f63,   //  48 ..  63
-    f64,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,   //  64 ..  79
-    A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  A2Z,  f91,  f92,  f93,  f94,  f95,   //  80 ..  95
-    f96,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  XXX,  f105, XXX,  XXX,  XXX,  f109, XXX,  XXX,   //  96 .. 111
-    XXX,  XXX,  XXX,  f115, XXX,  XXX,  XXX,  XXX,  f120, XXX,  XXX,  f123, f124, f125, f126, XXX    // 112 .. 127
-};
-
+#define NEXT goto next
 void Run(const char *x) {
     sp = lsp = 0;
     pc = (char *)x;
-    while (pc) { jt[NR](); }
+next:
+    switch (NR) {
+    case 0: return;
+    case 9: case 10: case 13: case ' ': NEXT;
+    case '!': t1=NR;
+            if (t1=='c') { CELLS(expr()) = ACC; }
+            else if (t1=='b') { BYTES(expr()) = (char)ACC; }
+            else if (t1=='m') { *(char*)(expr()) = (char)ACC; }
+        NEXT;
+    case '"': while (PC && (PC!='"')) { putchar(NR); } if (PC) ++pc; NEXT;
+    // '#' and '$' are free;
+    case '%': ACC %= expr(); NEXT;
+    case '&': ACC &= expr(); NEXT;
+    case '\'': ACC = NR; NEXT;
+    case '(': if (!ACC) { while (NR != ')') { ; } } NEXT;
+    case ')': NEXT;
+    case '*': ACC *= expr(); NEXT;
+    case '+': ACC += expr(); NEXT;
+    case ',': putchar((int)expr()); NEXT;
+    case '-': ACC -= expr(); NEXT;
+    case '.': t1=NR; if (t1 == 'b') { putchar(' '); }
+        else if (t1 == 'n') { putchar(10); }
+        else if (t1 == 'h') { printf("%lx", (long)expr()); }
+        else { --pc; printf("%ld", expr()); }
+        NEXT;
+    case '/': ACC /= expr(); NEXT;
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9': --pc; ACC = expr(); NEXT;
+    case ':': if (PC != ':') { RG(NR) = ACC; NEXT; }
+        pc += 2; funcs[IR-'A'] = pc;
+        while (PC) {
+            if ((PC==';') && (IR==';')) { break; }
+            else { ++pc; }
+        } ++pc; here=pc; NEXT;
+    case ';': if (0 < sp) { pc = stk[sp--]; } else { sp = 0; pc = 0; } NEXT;
+    case '<': if (PC == '=') { ++pc; ACC = (ACC <= expr()) ? -1 : 0; }
+        else { ACC = (ACC < expr()) ? -1 : 0; }
+        NEXT;
+    case '=': ACC = (ACC == expr()) ? -1 : 0; NEXT;
+    case '>': if (PC == '=') { ++pc; ACC = (ACC >= expr()) ? -1 : 0; }
+        else { ACC = (ACC > expr()) ? -1 : 0; }
+        NEXT;
+    // case '?': free;
+    case '@': t1=NR;
+            if (t1=='c') { ACC = CELLS(expr()); }
+            else if (t1=='b') { ACC = BYTES(expr()); }
+            else if (t1=='m') { ACC = *(char*)(expr()); }
+            NEXT;
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':
+    case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
+    case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U':
+    case 'V': case 'W': case 'X': case 'Y': case 'Z': ACC = RG(IR);  NEXT;
+    case '[': lsp+=3; L0=RG('I'); RG('I')=0; L1=ACC; L2=(cell_t)pc; NEXT;
+    case ']': if (++RG('I')<L1) { pc=(char *)L2; } else { RG('I')=L0; LU; } NEXT;
+    case '^': stk[++sp]=pc+1; pc=funcs[PC-'A']; NEXT;
+    // case '\', '_', '`' are free;
+#ifdef isPC
+    case '`': { char *x=here+64, *y=x; while ( PC!='`') { *(y++)=NR; }
+            *y=0; ACC=system(x); }; ++pc; NEXT;
+#endif
+    case 'd': --RG(NR); NEXT;
+    case 'i': ++RG(NR); NEXT;
+    case 'm': t1 = NR; RG(NR) = RG(t1); NEXT;
+    case 'r': t1=NR; if (t1=='.') { ACC=(cell_t)stk[+sp--]; } 
+            else if (t1=='@') { ACC=(cell_t)stk[sp]; }
+            else { RG(t1)=(cell_t)stk[sp--]; }
+            NEXT;
+    case 's': t1=NR; if (t1=='.') { stk[++sp]=(char*)ACC; } 
+            else { stk[++sp]=(char*)RG(t1); } 
+            NEXT;
+    case 'x': t1 = NR; if (t1=='T') { ACC = clock(); }
+        else if (t1 == 'U') { LU; }
+        else if (t1 == 'H') { ACC = here-(&BYTES(0)); }
+        else if (t1 == 'M') { ACC = (cell_t)&BYTES(0); }
+#ifdef isPC
+        else if (t1 == 'Q') { isBye = 1; }
+#endif
+        NEXT;
+    case '{': lsp += 3; L0 = (cell_t)pc; NEXT;
+    case '|': ACC |= expr(); NEXT;
+    case '}': if (ACC) { pc = (char*)L0; } else { LU; } NEXT;
+    // case '~': free;
+    default: printf("-[%d]?-",(int)IR);
+    }
 }
+
+#ifdef isPC
 void Loop() {
     char *y = here;
     int sz = &BYTES(MEM_SZ)-y-1;
@@ -155,10 +176,11 @@ void Loop() {
     Run(y);
 }
 int main(int argc, char *argv[]) {
-    // int r='B';
-    // for (i=1; i<argc; ++i) { y=argv[i]; RG[b++] = atoi(y); }
+    // int r='A';
+    // for (i=1; i<argc; ++i) { y=argv[i]; RG(r++) = atoi(y); }
     init();
     input_fp = fopen("src.q4", "rb");
     while (isBye == 0) { Loop(); }
     return 0;
 }
+#endif
