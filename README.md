@@ -88,13 +88,17 @@ r@          Copy the TOS to the ACC.
 -(expr)     ACC = ACC - (expr).
 *(expr)     ACC = ACC * (expr).
 /(expr)     ACC = ACC / (expr).
-%(expr)     ACC = ACC % (expr).
+%(expr)     ACC = ACC % (expr) (modulo).
+&(expr)     ACC = ACC & (expr) (and).
+|(expr)     ACC = ACC | (expr) (or).
 
 
 ******* COMPARISONS *******
-<(expr)     ACC = (ACC < (expr)) ? -1 : 0.
-=(expr)     ACC = (ACC = (expr)) ? -1 : 0.
->(expr)     ACC = (ACC > (expr)) ? -1 : 0.
+<(expr)     ACC = (ACC <  (expr)) ? -1 : 0.
+<=(expr)    ACC = (ACC <= (expr)) ? -1 : 0.
+=(expr)     ACC = (ACC == (expr)) ? -1 : 0.
+>(expr)     ACC = (ACC >  (expr)) ? -1 : 0.
+>=(expr)    ACC = (ACC >= (expr)) ? -1 : 0.
 
 
 ******* IF/THEN *******

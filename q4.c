@@ -82,8 +82,9 @@ next:
             else if (t1=='m') { *(char*)(expr()) = (char)ACC; }
         NEXT;
     case '"': while (PC && (PC!='"')) { putchar(NR); } if (PC) ++pc; NEXT;
+    // '#' and '$' are free;
     case '%': ACC %= expr(); NEXT;
-    // '#' .. '&' are free;
+    case '&': ACC &= expr(); NEXT;
     case '\'': ACC = NR; NEXT;
     case '(': if (!ACC) { while (NR != ')') { ; } } NEXT;
     case ')': NEXT;
@@ -106,9 +107,13 @@ next:
             else { ++pc; }
         } ++pc; here=pc; NEXT;
     case ';': if (0 < sp) { pc = stk[sp--]; } else { sp = 0; pc = 0; } NEXT;
-    case '<': ACC = (ACC <  expr()) ? -1 : 0; NEXT;
+    case '<': if (PC == '=') { ++pc; ACC = (ACC <= expr()) ? -1 : 0; }
+        else { ACC = (ACC < expr()) ? -1 : 0; }
+        NEXT;
     case '=': ACC = (ACC == expr()) ? -1 : 0; NEXT;
-    case '>': ACC = (ACC >  expr()) ? -1 : 0; NEXT;
+    case '>': if (PC == '=') { ++pc; ACC = (ACC >= expr()) ? -1 : 0; }
+        else { ACC = (ACC > expr()) ? -1 : 0; }
+        NEXT;
     // case '?': free;
     case '@': t1=NR;
             if (t1=='c') { ACC = CELLS(expr()); }
@@ -146,8 +151,9 @@ next:
 #endif
         NEXT;
     case '{': lsp += 3; L0 = (cell_t)pc; NEXT;
+    case '|': ACC |= expr(); NEXT;
     case '}': if (ACC) { pc = (char*)L0; } else { LU; } NEXT;
-    // case '|', '~': free;
+    // case '~': free;
     default: printf("-[%d]?-",(int)IR);
     }
 }
