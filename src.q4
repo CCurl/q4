@@ -1,5 +1,8 @@
-::E xT-S:E .E .b E/K .. .b ;;
-::F .Y .b ;;
-::C s. xT:S r.[M*X+B:Y] ^F^E .n ;;
-::D :C C<1(1:C) C>50(50:C) C[N*K*K ^C] ;;
-1000:K 50:N 2 ^D
+:{E E:xT-S .E .b E/K .. .b};
+:{F .Y .b};
+:{C s. S:xT r.[Y:M*X+B] :F:E .n};
+:{D C<1(C:1) C>10(C:10) C[N*K*K :C]};
+0(K:1000 N:50 C:2 :D)
+:{XX ."hi there"};
+:XX
+
