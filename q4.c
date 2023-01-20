@@ -55,10 +55,8 @@ void init() {
 }
 
 char *funcN(char *x) {
-    printf("(%p)",x);
-    printf("(%d)",*x);
     cell_t hh = *(x++);
-    while (BTW(*x, 'A', 'Z')) { printf("(%d)",*x); hh = (hh * 33) + *(x++); }
+    while (BTW(*x, 'A', 'Z')) { hh = (hh * 33) + *(x++); }
     fn = (hh & FUNCS_SZ); fa = funcs[fn];
     return x;
 }
@@ -82,11 +80,9 @@ long expr() {
 void Run(const char *x) {
     sp = lsp = 0;
     pc = (char *)x;
-    printf("-l:[%s]-",x);
 next:
     switch (NR) {
     case 0: case 9: case 10: case 13: case ' ':
-        printf("-dstReg='%d'-",(int)dstReg);
         if (dstReg) { RG(dstReg)=acc; dstReg=0; }
         if (IR) { NEXT; } else { return; }
     case '!': t1=NR;
@@ -115,16 +111,15 @@ next:
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
             --pc; acc = expr(); NEXT;
-    case ':': printf("-':'%p-",pc); if (PC != '{') { pc=funcN(pc); printf("-%ld/%p-",fn,fa); if (fa) { stk[++sp]=pc; pc=fa; } NEXT; }
+    case ':': if (PC != ':') { pc=funcN(pc); if (fa) { stk[++sp]=pc; pc=fa; } NEXT; }
             pc = funcN(pc+1); if (fa) { printf("-redef at %ld-", fa-&BYTES(0)); }
             while (PC == ' ') { ++pc; }
             funcs[fn] = pc;
-            printf(":{%ld/%p};",fn,pc);
             while (PC) {
-                if ((IR == '}') && (PC == ';')) { here = ++pc; NEXT; }
+                if ((IR == ';') && (PC == ';')) { here = ++pc; NEXT; }
                 else { ++pc; }
             }
-            printf("-no '};'-");
+            printf("-no ';;'-");
     case ';': if (0 < sp) { pc = stk[sp--]; } else { return; } NEXT;
     case '<': acc = (acc < expr()) ? -1 : 0; NEXT;
     case '=': acc = (acc == expr()) ? -1 : 0; NEXT;
