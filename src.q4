@@ -1,7 +1,12 @@
-::E E:xT-S .E .b E/K .. .b;;
+::ST S:xT;;
+::EL E:xT-S ." (" .E."," E/1000 ...")";;
 ::F .Y .b;;
-::C s. S:xT r.[Y:M*X+B] :F:E .n;;
-::D C<1(C:1) C>10(C:10) C[N*K*K :C];;
-0(K:1000 N:50 C:2 :D)
-::XX ."hi there";;
-:XX
+::C .. .b s. :ST r. 0[Y:M*X+B] :F :EL .n;;
+::D C<1(C:1) C>10(C:10) C 0[N*K*K :C];;
+K:1000 N:50 C:2 :D
+
+::P N 3[N#I~(0^)Q<I(^)iI];;
+::PRIMES X: C:4 X 11[N:I :P(iC)iI].C ." primes in " .X;;
+::BENCH s. :ST r. :PRIMES :EL;;
+::MIL *1000*1000;;
+1 :MIL :BENCH

@@ -17,7 +17,7 @@
 #define MEM_SZ          10000
 #define CODE_SZ         20480
 #define REGS_SZ     'z'-'A'+1
-#define FUNCS_SZ           31
+#define FUNCS_SZ          511
 
 #define BTW(a,b,c) ((b<=a) && (a<=c))
 
@@ -31,7 +31,6 @@
 #define L0           lstk[lsp]
 #define L1           lstk[lsp-1]
 #define L2           lstk[lsp-2]
-#define LU           lsp=(lsp<3)?0:(lsp-3)
 
 #define BYTES(x)      mem.b[x]
 #define CELLS(x)      mem.c[x]
@@ -41,7 +40,7 @@ union { cell_t c[MEM_SZ/sizeof(cell_t)]; char b[MEM_SZ]; } mem;
 
 cell_t regs[REGS_SZ], lstk[LSTK_SZ+1];
 char *funcs[FUNCS_SZ+1], *stk[STK_SZ], *pc, *here, *fa, dstReg;
-cell_t acc, sp, lsp, t1, fn;
+cell_t acc, lcc, sp, lsp, t1, fn;
 
 #ifdef isPC
 FILE *input_fp;
@@ -76,6 +75,12 @@ long expr() {
     // return ACC;
 }
 
+int unLoop(int ret) {
+    if (2<lsp) { RG('I')=L0; lsp-=3; }
+    if (ret && (0<sp)) { pc=stk[sp--]; return (pc)?1:0; }
+    return 0;
+}
+
 #define NEXT goto next
 void Run(const char *x) {
     sp = lsp = 0;
@@ -83,7 +88,7 @@ void Run(const char *x) {
 next:
     switch (NR) {
     case 0: case 9: case 10: case 13: case ' ':
-        if (dstReg) { RG(dstReg)=acc; dstReg=0; }
+        if (dstReg) { RG(dstReg)=acc; dstReg=0; } else { lcc = acc; }
         if (IR) { NEXT; } else { return; }
     case '!': t1=NR;
             if (t1=='c') { CELLS(expr()) = acc; }
@@ -91,7 +96,8 @@ next:
             else if (t1=='m') { *(char*)(expr()) = (char)acc; }
         NEXT;
     case '"': while (PC && (PC!='"')) { putchar(NR); } if (PC) ++pc; NEXT;
-    // '#' and '$' are free;
+    case '#': t1=expr(); RG('R')=acc%t1; RG('Q')=acc/t1; acc=RG('R'); NEXT;
+    // case '$': NEXT;
     case '%': acc %= expr(); NEXT;
     case '&': acc &= expr(); NEXT;
     case '\'': acc = NR; NEXT;
@@ -134,12 +140,12 @@ next:
     case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
     case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U':
     case 'V': case 'W': case 'X': case 'Y': case 'Z': 
-            if (PC == ':') { dstReg = IR; ++pc; }
+            if (PC == ':') { dstReg=IR; ++pc; }
             else { acc = RG(IR); }
             NEXT;
-    case '[': lsp+=3; L0=RG('I'); L1=acc; L2=(cell_t)pc; NEXT;
-    case ']': if (++RG('I')<L1) { pc=(char *)L2; } else { RG('I')=L0; LU; } NEXT;
-    case '^': stk[++sp]=pc+1; pc=funcs[PC-'A']; NEXT;
+    case '[': lsp+=3; L0=RG('I'); RG('I')=acc; L1=lcc; L2=(cell_t)pc; NEXT;
+    case ']': if (++RG('I')<L1) { pc=(char *)L2; } else { unLoop(0); } NEXT;
+    case '^': ; if (unLoop(1)) { NEXT; } else { return; }
     // case '\', '_', '`' are free;
 #ifdef isPC
     case '`': { char *x=here+64, *y=x; while ( PC!='`') { *(y++)=NR; }
@@ -155,18 +161,18 @@ next:
     case 's': t1=NR; if (t1=='.') { stk[++sp]=(char*)acc; } 
             else { stk[++sp]=(char*)RG(t1); } 
             NEXT;
-    case 'x': t1 = NR; if (t1=='T') { acc = clock(); }
-        else if (t1 == 'U') { LU; }
+    case 'x': t1 = NR;
+        if (t1 == 'T') { acc = clock(); }
         else if (t1 == 'H') { acc = here-(&BYTES(0)); }
         else if (t1 == 'M') { acc = (cell_t)&BYTES(0); }
 #ifdef isPC
         else if (t1 == 'Q') { isBye = 1; }
 #endif
         NEXT;
-    case '{': lsp += 3; L0 = (cell_t)pc; NEXT;
+    case '{': lsp += 3; L2 = (cell_t)pc; L0=RG('I'); NEXT;
     case '|': acc |= expr(); NEXT;
-    case '}': if (acc) { pc = (char*)L0; } else { LU; } NEXT;
-    // case '~': free;
+    case '}': if (acc) { pc = (char*)L2; } else { unLoop(0); } NEXT;
+    case '~': acc = acc ? 0 : -1; NEXT;
     default: printf("-[%d]?-",(int)IR);
     }
 }
