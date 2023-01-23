@@ -61,10 +61,10 @@ void jBench() {
 int main()
 {
     //benches(3);
-    jBench();
+    // jBench();
     //int n = 256;
     //for (int i = 1; i <= 16; i++) {
     //    n += n;
-    //    pbench(n);
+    pbench(10*1000*1000);
     //}
 }
