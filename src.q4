@@ -1,12 +1,12 @@
 ::ST S:xT;;
 ::EL E:xT-S ." (" .E."," E/1000 ...")";;
-::F .Y .b;;
-::C .. .b s. :ST r. 0[Y:M*X+B] :F :EL .n;;
-::D C<1(C:1) C>10(C:10) C 0[N*K*K :C];;
-K:1000 N:50 C:2 :D
+
+::JM .C." is not prime says ".I.n;;
+::JB C:2124680 :ST 100 1[C 1[C%I~(:JM)]] :EL;;
+0(:JB)
 
 ::P N 3[N#I~(0^)Q<I(^)iI];;
 ::PRIMES X: C:4 X 11[N:I :P(iC)iI].C ." primes in " .X;;
-::BENCH s. :ST r. :PRIMES :EL;;
+::PB s. :ST r. :PRIMES :EL;;
 ::MIL *1000*1000;;
-1 :MIL :BENCH
+0(1 :MIL :PB)

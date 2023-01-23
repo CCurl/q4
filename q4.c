@@ -1,6 +1,6 @@
-// q4.cpp - a fast register-based interpreter
+// q4.cpp - a register-based interpreter
 
-// Windows PC (Visual Studio)?
+// Windows PC (Visual Studio)
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #define isPC
@@ -16,13 +16,14 @@
 #define LSTK_SZ            11
 #define MEM_SZ          10000
 #define CODE_SZ         20480
-#define REGS_SZ     'z'-'A'+1
-#define FUNCS_SZ          511
+#define REGS_SZ           128 // 'z'-'A'+1
+#define FUNCS_SZ         1023
 
 #define BTW(a,b,c) ((b<=a) && (a<=c))
 
 // #define ACC          regs[dstReg]
-#define RG(x)        regs[(x)-'A']
+#define RG(x)        regs[(x)]
+// #define RG(x)        regs[(x)-'A']
 
 #define PC           *(pc)
 #define IR           *(pc-1)
